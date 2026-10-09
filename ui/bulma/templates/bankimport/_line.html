@@ -1,0 +1,25 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later. Une ligne de la zone d'attente (variable line) : case à cocher pour les actions groupées (formulaire bki-bulk), date, libellé, montant, statut, contrepartie proposée ; pour une ligne à traiter, formulaire de contrepartie (fiche ou compte, « Mémoriser ») envoyé en HTMX, qui remplace la ligne par la réponse du serveur. Rendue seule en réponse à HTMX. #}<tr id="bki-line-{{ line.id }}" class="bki-line{% if line.ready %} bki-ready{% endif %}{% if line.error %} bki-row-error{% endif %}" data-bki-line="{{ line.id }}" data-bki-status="{{ line.status }}">
+  <td>{% if line.selectable %}<input type="checkbox" form="bki-bulk" name="ids" value="{{ line.id }}" id="bki-check-{{ line.id }}" aria-label="{% translate 'bankimport_ui.lines.select' %} {{ line.label }}">{% endif %}</td>
+  <td class="pd-mono"><time datetime="{{ line.iso_date }}">{{ line.date }}</time></td>
+  <td>{{ line.label }}{% if line.extra %}<br><small class="pd-muted">{{ line.extra }}</small>{% endif %}{% if line.counterparty %}<br><small>{{ line.counterparty }}</small>{% endif %}
+    {% if line.recorded %}<br><span class="tag is-warning is-light" data-bki-recorded>{% translate "bankimport_ui.lines.recorded" %}</span>{% endif %}
+    {% if line.reversed %}<br><span class="tag is-light" data-bki-reversed>{% translate "bankimport_ui.lines.reversed" %}</span>{% endif %}</td>
+  <td class="amount bki-{{ line.direction }}">{{ line.amount }}</td>
+  <td><span class="tag {{ line.status_class }} is-light">{{ line.status_label }}</span>{% if line.entry_url %} <a href="{{ line.entry_url }}" class="pd-mono">{% translate "bankimport_ui.lines.entry" %} {{ line.entry_id }}</a>{% endif %}</td>
+  <td class="bki-counterpart">
+    {% if line.counterpart %}<p data-bki-counterpart><strong>{{ line.counterpart }}</strong>{% if line.from_rule %} <span class="tag is-light">{% translate "bankimport_ui.lines.from_rule" %}</span>{% endif %}{% if line.matched %} <span class="tag is-success is-light">{% translate "bankimport_ui.lines.matched" %}</span>{% endif %}</p>{% endif %}
+    {% if line.can_import %}
+    <form method="post" action="{{ line.update_url }}" class="bki-counterpart-form" hx-post="{{ line.update_url }}" hx-target="#bki-line-{{ line.id }}" hx-swap="outerHTML" data-bki-counterpart-form>
+      {% csrf_input %}<input type="hidden" name="next" value="{{ next }}">
+      <label class="is-sr-only" for="bki-card-{{ line.id }}">{% translate "bankimport_ui.lines.card_code" %}</label>
+      <input class="input is-small pd-mono" type="text" id="bki-card-{{ line.id }}" name="card_code" value="{{ line.card_code }}" list="bki-cards" placeholder="{% translate 'bankimport_ui.lines.card_code' %}" maxlength="64" autocomplete="off">
+      <label class="is-sr-only" for="bki-account-{{ line.id }}">{% translate "bankimport_ui.lines.account" %}</label>
+      <input class="input is-small pd-mono" type="text" id="bki-account-{{ line.id }}" name="account" value="{{ line.account }}" list="bki-accounts" placeholder="{% translate 'bankimport_ui.lines.account' %}" maxlength="40" autocomplete="off">
+      <label class="checkbox is-size-7" for="bki-learn-{{ line.id }}"><input type="checkbox" id="bki-learn-{{ line.id }}" name="learn" value="1" checked> {% translate "bankimport_ui.lines.learn" %}</label>
+      <button class="button is-small pd-touch" type="submit">{% include "ui/_icon.html" with name="check" %}<span>{% translate "bankimport_ui.lines.apply" %}<span class="is-sr-only"> : {{ line.label }}</span></span></button>
+    </form>
+    {% if line.counterpart %}<form method="post" action="{{ line.clear_url }}" class="bki-inline" hx-post="{{ line.clear_url }}" hx-target="#bki-line-{{ line.id }}" hx-swap="outerHTML">{% csrf_input %}<input type="hidden" name="next" value="{{ next }}"><button class="button is-small is-text" type="submit">{% translate "bankimport_ui.lines.clear" %}<span class="is-sr-only"> : {{ line.label }}</span></button></form>{% endif %}
+    {% endif %}
+    {% if form_error %}<p class="help is-danger" role="alert" data-bki-form-error>{{ form_error }}</p>{% elsif line.error %}<p class="help is-danger" data-bki-error>{{ line.error }}</p>{% endif %}
+  </td>
+</tr>

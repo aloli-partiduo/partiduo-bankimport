@@ -1,0 +1,75 @@
+= Contrat `Bankimport::Api`
+:toc: left
+:toc-title: Table des matières
+:icons: font
+
+Contrat public de l'extension `BANKIMPORT` (ADR-011 D6), sur le modèle de
+`Partiduo::Api` : acteur en premier argument, contrôle d'accès en première
+ligne (extension active, permission), vues immuables, commandes qui rendent
+un `Result` avec des erreurs par champ (`bankimport.errors.*`), dans une
+transaction. L'interface `ui/bulma/` et les extensions qui en dépendent
+(`partiduo-perso`) ne passent que par lui.
+
+== Permissions
+
+[cols="1,3",options="header"]
+|===
+|Permission |Ouvre
+|`bankimport.read` |`formats`, `format`, `sample`, `detect_kind`, `imports`, `import_detail`, `import_content` (+ `core.attachment.read`), `lines`, `count_lines`, `line`, `open_items`, `rules`, `rule`, `tile`
+|`bankimport.import` |`preview`, `import_file` (+ `core.attachment.write`), `set_counterpart`, `clear_counterpart`, `discard`, `restore`, `apply_rules`, `transfer` (+ `accounting.entry.post`, journal en écriture), `reconcile` (+ `accounting.matching.write`)
+|`bankimport.admin` |`check_format`, `create_format`, `update_format`, `delete_format`, `create_rule`, `update_rule`, `delete_rule`, `delete_import`, `purge`
+|===
+
+Les lignes et les imports ne sont visibles que dans les journaux financiers
+que l'acteur voit (`Partiduo::Api::Accounting.ledgers`).
+
+== Import
+
+* `preview(actor, ImportInput) : Result(PreviewView)` — lit sans écrire :
+  genre reconnu, lignes (`duplicate` pour un doublon), anomalies
+  (`lines[<rang>]`), import antérieur du même fichier, compte et solde lus.
+* `import_file(actor, ImportInput) : Result(ImportView)` — pièce jointe,
+  lignes en attente, règles, lettrage proposé, écritures semblables
+  signalées. Erreurs : `ledger.blank|invalid`, `file.blank|too_large|binary|
+  empty|not_ofx|not_qif|malformed_csv|already_imported|too_many_lines`,
+  `format.blank|unknown`, `choice.invalid` ; celles du socle pour la pièce.
+* `ImportInput` : `ledger_id`, `filename`, `content` (octets), `kind`
+  (`auto`, `csv`, `ofx`, `qif`), `format_id` (CSV), `date_format` (QIF),
+  `allow_same_file`.
+
+== Zone d'attente
+
+* `lines(actor, LineQuery)` — filtres : `ledger_id`, `import_id`, `status`
+  (`pending` par défaut, `nil` pour tous), `search`, `unassigned_only`.
+* `set_counterpart(actor, id, CounterpartInput)` — fiche *ou* compte,
+  `match_line_id` facultatif, `learn` (règle apprise). Erreurs :
+  `counterpart.blank|both|card_unknown|account_unknown|account_not_direct`,
+  `line.not_pending`, `line.match_invalid`.
+* `discard`, `restore` (`line.fitid_taken`), `purge`, `apply_rules`.
+* `transfer(actor, ids) : Result(TransferReportView)` — une écriture par
+  ligne par `post_financial` ; refus gardés sur les lignes (`error`).
+
+== Pointage
+
+`reconcile(actor, import_id, ReconcileInput(reference, start_balance,
+end_balance))` — appelle `Partiduo::Api::Accounting.reconcile` avec les
+écritures transférées non rapprochées de l'import. Erreurs :
+`reconcile.already|nothing` et celles du rapprochement
+(`accounting.errors.reconciliation.*`).
+
+== Formats et règles
+
+`FormatInput` : `name`, `institution`, `ledger_id`, `separator`
+(`comma|semicolon|tab|pipe`), `encoding` (`utf-8|windows-1252`),
+`skip_lines` (0 à 50), `date_format` (`dd/mm/yyyy`…), `decimal_separator`
+(`comma|dot`), `thousands_separator` (`none|space|dot|comma|apostrophe`),
+rangs de colonnes (1 à 60), `negate`.
+
+`RuleInput` : `label_contains`, `amount` (positif), `direction`
+(`any|in|out`), `card_code` *ou* `account`, `ledger_id`, `position`,
+`active`.
+
+== Événements
+
+Abonnement : `entry.cancelled` (ligne de nouveau à traiter). Aucun
+événement publié.

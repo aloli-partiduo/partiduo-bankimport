@@ -1,0 +1,75 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later. Import d'un relevé bancaire (ADR-011 D6) en deux temps : fichier (ou texte collé), journal financier, genre (reconnu au contenu par défaut), format CSV de l'établissement, ordre des dates d'un QIF ; puis aperçu des lignes lues, doublons et anomalies signalés, et import dans la zone d'attente. Formulaires ordinaires, sans JavaScript. #}{% extend "ui/base.html" %}
+{% block title %}{{ title }}{% endblock title %}
+{% block scripts %}<link rel="stylesheet" href="{% asset 'bankimport/css/bankimport.css' %}">{% endblock scripts %}
+{% block crumbs %}{% include "ui/_crumbs.html" %}{% endblock crumbs %}
+{% block heading %}{{ title }}{% endblock heading %}
+{% block content %}
+{% if error %}<div class="notification is-danger is-light pd-alert" role="alert" id="bki-import-error">{% include "ui/_icon.html" with name="triangle-alert" %}<div><p>{{ error }}</p></div></div>{% endif %}
+{% if step == "start" %}
+{% if no_ledger %}<div class="notification is-warning is-light pd-alert" role="status" data-bki-no-ledger>{% include "ui/_icon.html" with name="triangle-alert" %}<div><p>{% translate "bankimport_ui.import.no_ledger" %}</p></div></div>{% endif %}
+<section class="pd-panel" aria-labelledby="bki-import-file">
+  <header><h2 id="bki-import-file">{% translate "bankimport_ui.import.file_title" %}</h2></header>
+  <div class="pd-body">
+    <form method="post" action="{% url 'bankimport:import' %}" enctype="multipart/form-data" class="pd-form" novalidate data-bki-import>
+      {% csrf_input %}
+      <input type="hidden" name="step" value="preview">
+      <div class="pd-form-grid">
+        <div class="field"><label class="label" for="bki-ledger">{% translate "bankimport_ui.import.ledger" %}<span class="pd-required" aria-hidden="true"> *</span></label>
+          <div class="select is-fullwidth"><select id="bki-ledger" name="ledger_id" required>{% for option in ledgers %}<option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></div></div>
+        <div class="field"><label class="label" for="bki-kind">{% translate "bankimport_ui.import.kind" %}</label>
+          <div class="select is-fullwidth"><select id="bki-kind" name="kind">{% for option in kinds %}<option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></div></div>
+        <div class="field"><label class="label" for="bki-format">{% translate "bankimport_ui.import.format" %}</label>
+          <div class="select is-fullwidth"><select id="bki-format" name="format_id" aria-describedby="bki-format-help">{% for option in formats %}<option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></div>
+          <p class="help" id="bki-format-help">{% translate "bankimport_ui.import.format_help" %}{% if no_format %}{% if can_admin %} <a href="{% url 'bankimport:format_new' %}">{% translate "bankimport_ui.formats.new" %}</a>{% endif %}{% endif %}</p></div>
+        <div class="field"><label class="label" for="bki-date-format">{% translate "bankimport_ui.import.date_format" %}</label>
+          <div class="select is-fullwidth"><select id="bki-date-format" name="date_format" aria-describedby="bki-date-format-help">{% for option in date_formats %}<option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></div>
+          <p class="help" id="bki-date-format-help">{% translate "bankimport_ui.import.date_format_help" %}</p></div>
+      </div>
+      <div class="field"><label class="label" for="bki-upload">{% translate "bankimport_ui.import.file" %}</label>
+        <input class="input" type="file" id="bki-upload" name="file" accept=".csv,.txt,.ofx,.qfx,.qif,text/csv,text/plain,application/x-ofx" aria-describedby="bki-upload-help{% if error %} bki-import-error{% endif %}"></div>
+      <p class="help" id="bki-upload-help">{% translate "bankimport_ui.import.file_help" %}</p>
+      <div class="field"><label class="label" for="bki-content">{% translate "bankimport_ui.import.paste" %}</label>
+        <textarea class="textarea pd-mono" id="bki-content" name="content" rows="6"{% if error %} aria-invalid="true" aria-describedby="bki-import-error"{% endif %}></textarea></div>
+      <div class="pd-form-actions"><button class="button is-primary pd-touch" type="submit">{% include "ui/_icon.html" with name="upload" %}<span>{% translate "bankimport_ui.import.preview" %}</span></button></div>
+    </form>
+  </div>
+</section>
+{% endif %}
+{% if step == "preview" %}
+<form method="post" action="{% url 'bankimport:import' %}" class="pd-form" novalidate data-bki-preview>
+  {% csrf_input %}
+  <input type="hidden" name="payload" value="{{ payload }}">
+  <input type="hidden" name="filename" value="{{ filename }}">
+  <input type="hidden" name="ledger_id" value="{{ ledger_id }}">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  <input type="hidden" name="format_id" value="{{ format_id }}">
+  <input type="hidden" name="date_format" value="{{ date_format }}">
+  <section class="pd-panel" aria-labelledby="bki-preview-title">
+    <header><h2 id="bki-preview-title">{{ filename }}</h2><span class="pd-muted" role="status" data-bki-summary>{{ summary }}</span></header>
+    <div class="pd-body">
+      <dl class="bki-facts">
+        <div><dt>{% translate "bankimport_ui.import.ledger" %}</dt><dd>{{ ledger }}</dd></div>
+        <div><dt>{% translate "bankimport_ui.import.kind" %}</dt><dd>{{ kind_label }}</dd></div>
+        {% if account_number %}<div><dt>{% translate "bankimport_ui.import.account_number" %}</dt><dd class="pd-mono">{{ account_number }}</dd></div>{% endif %}
+        {% if end_balance %}<div><dt>{% translate "bankimport_ui.import.end_balance" %}</dt><dd class="pd-mono">{{ end_balance }}</dd></div>{% endif %}
+      </dl>
+      {% if same_file %}<div class="notification is-warning is-light pd-alert" role="status" data-bki-same-file>{% include "ui/_icon.html" with name="triangle-alert" %}<div><p>{% translate "bankimport_ui.import.same_file" %} <a href="{{ same_file }}">{% translate "bankimport_ui.import.same_file_link" %}</a></p>
+        <label class="checkbox pd-check" for="bki-allow-same"><input type="checkbox" id="bki-allow-same" name="allow_same_file" value="1"> {% translate "bankimport_ui.import.allow_same_file" %}</label></div></div>{% endif %}
+      {% if issues %}<h3 class="has-text-weight-semibold">{% translate "bankimport_ui.import.issues" %}</h3><ul class="pd-list" data-bki-issues>{% for issue in issues %}<li>{{ issue.message }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    {% if rows %}
+    <div class="pd-scroll"><table class="table is-fullwidth is-narrow bki-table" data-bki-preview-table>
+      <caption class="is-sr-only">{% translate "bankimport_ui.import.rows" %}</caption>
+      <thead><tr><th scope="col">{% translate "bankimport_ui.lines.line" %}</th><th scope="col">{% translate "bankimport_ui.lines.date" %}</th><th scope="col">{% translate "bankimport_ui.lines.label" %}</th><th scope="col" class="amount">{% translate "bankimport_ui.lines.amount" %}</th><th scope="col">{% translate "bankimport_ui.lines.state" %}</th></tr></thead>
+      <tbody>{% for row in rows %}<tr class="{% if row.duplicate %}bki-row-muted{% endif %}" data-bki-position="{{ row.position }}"><td class="pd-mono">{{ row.position }}</td><td class="pd-mono">{{ row.date }}</td><td>{{ row.label }}{% if row.extra %}<br><small class="pd-muted">{{ row.extra }}</small>{% endif %}{% if row.reference %} <small class="pd-mono pd-muted">{{ row.reference }}</small>{% endif %}</td><td class="amount bki-{{ row.direction }}">{{ row.amount }}</td><td>{% if row.duplicate %}<span class="tag is-warning is-light">{% translate "bankimport.statuses.duplicate" %}</span>{% else %}<span class="tag is-info is-light">{% translate "bankimport_ui.import.new_line" %}</span>{% endif %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% if truncated %}<div class="pd-body"><p class="help">{{ truncated }}</p></div>{% endif %}
+    {% endif %}
+  </section>
+  <div class="pd-form-actions">
+    {% if importable %}<button class="button is-primary pd-touch" type="submit" name="step" value="import">{% include "ui/_icon.html" with name="check" %}<span>{{ importable }}</span></button>{% endif %}
+    <a href="{% url 'bankimport:import' %}">{% translate "ui.forms.cancel" %}</a>
+  </div>
+</form>
+{% endif %}
+{% endblock content %}

@@ -1,0 +1,203 @@
+= partiduo-bankimport — décisions
+:toc: left
+:toc-title: Table des matières
+:icons: font
+
+Décisions prises pendant le portage de l'extension `BANKIMPORT`, quand un
+point n'était pas tranché par les ADR (contexte, choix, alternative
+écartée), puis amendements proposés au contrat du cœur. Les ADR ne sont
+jamais modifiés : un écart ou un complément y est proposé ici.
+
+Spécification : ADR-011 D6 (`../partiduo-docs/adr/ADR-011-finances-personnelles.adoc`),
+avec ADR-003 (contrat d'extension, D6 surface publique, D7 événements),
+ADR-005 (interface) et ADR-006 (Comptabilité). Source fonctionnelle : le
+greffon d'import bancaire de l'application d'origine (legacy), dont on porte
+les fonctions et non le code.
+
+== Décisions
+
+=== D-BKI-001 — Une extension commune aux dossiers professionnels et foyer (9 octobre 2026)
+
+*Contexte.* ADR-011 D6 confie l'import des relevés à `partiduo-bankimport`,
+dont `partiduo-perso` dépendra (`depends_on "BANKIMPORT"`).
+
+*Choix.* Extension `BANKIMPORT`, `depends_on "ACCOUNTING"` (code du module
+Comptabilité vérifié dans `partiduo-app/src/accounting/manifest.cr`),
+`requires_core "~> 0.1"`, version lue dans `shard.yml`. Elle ne déclare
+aucune incompatibilité (`incompatible_with`, amendement A1 d'ADR-011) : elle
+sert les deux types de dossier. Son contrat public `Bankimport::Api` est
+celui que `partiduo-perso` emploiera (catégories = comptes, bénéficiaires =
+fiches).
+
+*Alternative écartée.* Un import propre à `partiduo-perso` : deux
+implémentations des mêmes formats.
+
+=== D-BKI-002 — CSV paramétrable, OFX et QIF ; lecture en Crystal (9 octobre 2026)
+
+*Choix.*
+
+* *CSV* : un format par établissement (`bankimport_csv_format`) —
+  séparateur (`,`, `;`, tabulation, `|`), encodage (UTF-8 ou
+  Windows-1252), lignes d'en-tête, format de date (dix gabarits, ordre
+  jour, mois, année ; séparateur indifférent), séparateurs décimal et de
+  milliers, rang des colonnes : date, libellé, montant signé *ou* débit et
+  crédit, information complémentaire, référence, tiers ; inversion du signe
+  (relevé de carte). Un fichier d'exemple se découpe à l'écran
+  (`Api.sample`).
+* *OFX* 1 (SGML, balises non fermées) et 2 (XML) : `STMTTRN` (`DTPOSTED`,
+  `TRNAMT`, `FITID`, `NAME`, `MEMO`, `CHECKNUM`/`REFNUM`), compte
+  (`ACCTID`), devise (`CURDEF`), solde de fin (`LEDGERBAL`). Jeu de
+  caractères de l'en-tête (`CHARSET:1252`, `encoding="…"`), sinon UTF-8.
+* *QIF* : sections de trésorerie (`Bank`, `CCard`, `Cash`, `Oth A`,
+  `Oth L`), blocs terminés par `^` ; l'ordre des dates (absent du QIF) est
+  choisi à l'import.
+* Genre reconnu au contenu par défaut. Décodage de Windows-1252 par table
+  (32 caractères au-delà de Latin-1), sans iconv. Une ligne illisible
+  (date, montant, libellé) ou de montant nul est ignorée et signalée à
+  l'aperçu, sans bloquer les autres.
+
+*Alternative écartée.* Le format CODA belge, que lisait l'application
+d'origine : hors du périmètre fixé par ADR-011 D6 ; il s'ajoutera comme un
+quatrième lecteur (`Parsers::CodaReader`) si un dossier belge le demande.
+
+=== D-BKI-003 — Fichier conservé par le socle, liens vers le cœur sans clé étrangère (9 octobre 2026)
+
+*Choix.* Le fichier importé est enregistré par
+`Partiduo::Api::Core.store_attachment` ; l'import garde son identifiant,
+qui devient aussi la pièce jointe de chaque écriture transférée et du relevé
+pointé. Les identifiants du cœur (journal, écriture, ligne d'écriture,
+pièce jointe, relevé) sont relus par le contrat, sans clé étrangère (même
+règle que D-CRM-003 et D-DOC-002). Les liens internes (`bankimport_*`,
+`auth_user`) ont leurs clés étrangères ; domaines contrôlés en base.
+
+Le socle n'admet ni `application/x-ofx` ni un type QIF : un OFX 2 est
+conservé en `application/xml`, un OFX 1 et un QIF en `text/plain`, un CSV
+en `text/csv` (amendement proposé A-BKI-1).
+
+=== D-BKI-004 — Droits de l'extension et du cœur, visibilité par journal (9 octobre 2026)
+
+*Choix.* `bankimport.read` (zone d'attente, historique), `bankimport.import`
+(importer, choisir les contreparties, écarter, reprendre, transférer,
+pointer), `bankimport.admin` (formats, règles, suppression d'un import,
+purge). Le contrat du cœur exige ses propres droits, avec l'acteur réel,
+jamais l'acteur système : `core.attachment.write` pour importer,
+`accounting.entry.post` et l'écriture dans le journal pour transférer,
+`accounting.matching.write` pour pointer. La zone d'attente et
+l'historique ne montrent que les journaux financiers visibles de l'acteur
+(`Accounting.ledgers`, droits par journal du socle) : un membre d'un foyer
+ne voit que ses comptes (ADR-011 D12).
+
+=== D-BKI-005 — Zone d'attente, statuts, doublons (9 octobre 2026)
+
+*Choix.* Une ligne importée est `pending` (à traiter), `transferred`,
+`duplicate` (écartée à l'import) ou `discarded` (écartée par
+l'utilisateur) ; rien n'est passé en comptabilité sans action de
+l'utilisateur. Doublons dans le même journal :
+
+* par *FITID* (OFX) : déjà présent, ou répété dans le fichier ; index
+  unique partiel en base ;
+* sinon par *empreinte* (date, montant, libellé normalisé), en comptant
+  les occurrences : deux paiements identiques du même jour restent deux
+  lignes tant que le journal n'en connaît qu'un.
+
+Les doublons sont gardés (statut, ligne d'origine) : on peut reprendre un
+faux doublon, sauf si son FITID est déjà présent. Un même fichier
+(empreinte SHA-256) déjà importé dans le journal est refusé, sauf case
+« Importer quand même ». Une écriture du journal de même date et de même
+montant passée hors de l'extension est *signalée* sur la ligne
+(`recorded_entry_id`), pas écartée. La purge (`bankimport.admin`) efface
+les lignes écartées et les doublons.
+
+L'application d'origine distinguait « nouveau », « attente »,
+« transféré », « erreur » et « à effacer » : l'attente devient une ligne
+à traiter dotée d'une contrepartie, l'erreur un message gardé sur la ligne
+à traiter, « à effacer » le statut écarté.
+
+=== D-BKI-006 — Règles de catégorisation apprises, lettrage proposé (9 octobre 2026)
+
+*Choix.* Une règle : « le libellé contient » (sans casse ni accents, sur le
+libellé, l'information complémentaire et le tiers), « le montant vaut »
+(absolu), sens, journal (ou tous), alors une fiche *ou* un compte. Ordre
+d'essai : position, montant donné, libellé le plus long, règle saisie
+avant règle apprise. Une règle *propose* : la ligne reste à traiter.
+
+*Apprentissage.* Choisir une contrepartie avec « Mémoriser » crée ou met à
+jour une règle apprise : clé = les quatre premiers mots sans chiffre du
+libellé (dates, numéros de carte et références changent d'un mois à
+l'autre), même sens. Rien n'est appris si la règle qui s'applique déjà
+donne ce choix ; une règle saisie n'est jamais modifiée ; une règle apprise
+modifiée à la main devient saisie.
+
+*Lettrage.* Quand la contrepartie est une fiche et qu'une seule écriture
+ouverte de cette fiche a le montant de la ligne (créance pour une entrée,
+dette pour une sortie), elle est proposée au lettrage ; le transfert la
+passe à `post_financial` (`match_line_ids`). Héritier du rapprochement
+automatique de l'application d'origine (montant et date), sans sa
+recherche dans les informations libres des opérations.
+
+=== D-BKI-007 — Historique des imports (9 octobre 2026)
+
+*Choix.* Chaque import garde journal, genre, format, nom du fichier, pièce
+jointe, empreinte, compte, devise et solde lus (OFX), compteurs et relevé
+pointé ; l'écran montre la période couverte, les totaux d'entrées et de
+sorties et l'état des lignes. Un import dont aucune ligne n'est transférée
+ni pointée se supprime avec ses lignes et son fichier ; sinon il est
+conservé. Supprimer un format ne touche pas aux imports.
+
+=== D-BKI-008 — Transfert par le service d'écriture du cœur (9 octobre 2026)
+
+*Choix.* Une écriture par ligne, par
+`Partiduo::Api::Accounting.post_financial` (le seul service d'écriture,
+ADR-003 D6) : date de la ligne, montant signé, contrepartie (fiche ou
+compte), libellé, pièce jointe de l'import, `source` =
+`bankimport:line:<id>`. Aucune table comptable propre. Chaque ligne passe
+dans son point de sauvegarde : un refus de la Comptabilité (période close,
+fiche inconnue…) reste sur la ligne, à corriger, sans empêcher les autres.
+Montants toujours en `BigDecimal` (spec de conventions qui interdit
+`Float`).
+
+=== D-BKI-009 — Écriture extournée : ligne de nouveau à traiter (9 octobre 2026)
+
+*Choix.* Abonnement à `entry.cancelled` (liste fermée d'ADR-003 D7) : la
+ligne dont l'écriture est extournée redevient à traiter, garde sa
+contrepartie et la trace de l'écriture annulée (`reversed_entry_id`).
+Aucun nouvel événement n'est publié par l'extension.
+
+=== D-BKI-010 — Pointage par le rapprochement de la Comptabilité (9 octobre 2026)
+
+*Choix.* « Pointer le relevé » d'un import appelle
+`Partiduo::Api::Accounting.reconcile` avec les écritures des lignes
+transférées encore non rapprochées, la référence, les soldes de début et
+de fin (solde de fin d'un OFX proposé) et le fichier en pièce jointe. Les
+refus sont ceux de la Comptabilité (écart des soldes, référence prise). Un
+relevé se défait dans l'écran de rapprochement de la Comptabilité.
+
+=== D-BKI-011 — Interface : HTMX d'abord (9 octobre 2026)
+
+*Choix.* La contrepartie d'une ligne se saisit dans la ligne (fiche ou
+compte, listes `datalist`) et s'enregistre en HTMX : le serveur rend la
+ligne seule (`_line.html`), qui remplace l'ancienne ; sans JavaScript, le
+formulaire fonctionne par redirection. Actions groupées par cases à
+cocher. Tuile « Relevés à traiter » et compteur du menu par les accroches
+`PartiduoUi::Extensions.tile` et `counter`. Opal reste disponible pour une
+saisie en grille au clavier si l'usage le demande ; HTMX suffit à cette
+version.
+
+== Amendements proposés au contrat du cœur
+
+À soumettre à l'utilisateur ; l'extension les contourne sans modifier
+`partiduo-app`.
+
+A-BKI-1 — Types MIME des relevés admis en pièce jointe (socle, `Core::Attachments::TYPES`)::
+  Ajouter `application/x-ofx` (extension `.ofx`) et `application/qif`
+  (`.qif`), contrôlés comme du texte (aucun octet nul). Aujourd'hui un OFX
+  1 ou un QIF est conservé en `text/plain`, et son extension d'origine ne
+  survit que dans le nom de fichier. Contournement en place (D-BKI-003).
+
+A-BKI-2 — Recherche d'une fiche par IBAN (`Partiduo::Api::Cards.CardQuery`)::
+  Un critère `iban` (normalisé, sans espaces) permettrait de proposer le
+  tiers d'une ligne à partir de l'IBAN de la contrepartie que donnent
+  beaucoup de relevés CSV et certains OFX. Aujourd'hui, seules les règles
+  sur le libellé le font. Contournement : règles apprises.
+
+Aucun nouvel événement n'est demandé à ADR-003 D7.

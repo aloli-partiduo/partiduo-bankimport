@@ -1,0 +1,71 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later
+ * Écrans de l'extension d'import des relevés bancaires : propriétés
+ * logiques et jetons du thème de l'interface (thème sombre compris). */
+.bki-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.bki-filters .field {
+  margin-block-end: 0;
+}
+
+.bki-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  border-block-end: 1px solid var(--pd-rule);
+}
+
+.bki-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.75rem 1.5rem;
+}
+
+.bki-facts dt {
+  color: var(--pd-muted);
+  font-size: 0.875rem;
+}
+
+.bki-in {
+  color: var(--pd-ok);
+}
+
+.bki-out {
+  color: var(--pd-ink);
+}
+
+.bki-table td {
+  vertical-align: top;
+}
+
+.bki-row-muted td {
+  color: var(--pd-muted);
+}
+
+.bki-row-error {
+  background: var(--pd-warn-bg);
+}
+
+.bki-ready {
+  background: var(--pd-ok-bg);
+}
+
+.bki-counterpart-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+}
+
+.bki-counterpart-form .input {
+  inline-size: 9rem;
+}
+
+.bki-inline {
+  display: inline;
+}

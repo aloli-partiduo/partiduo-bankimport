@@ -1,0 +1,111 @@
+en:
+  bankimport:
+    module:
+      name: "Bank statement import"
+    permissions:
+      read: "View imported statements and the pending lines"
+      import: "Import statements, choose counterparts, transfer and reconcile"
+      admin: "Set up CSV formats and rules, delete an import, purge discarded lines"
+    menu:
+      bankimport: "Bank statements"
+      bankimport_import: "Import a statement"
+      bankimport_lines: "Lines to process"
+      bankimport_history: "Import history"
+      bankimport_formats: "CSV statement formats"
+      bankimport_rules: "Categorisation rules"
+    kinds:
+      csv: "CSV"
+      ofx: "OFX"
+      qif: "QIF"
+    statuses:
+      pending: "To process"
+      transferred: "Transferred"
+      duplicate: "Duplicate"
+      discarded: "Discarded"
+    directions:
+      any: "In or out"
+      in: "Money in"
+      out: "Money out"
+    separators:
+      comma: "Comma (,)"
+      semicolon: "Semicolon (;)"
+      tab: "Tab"
+      pipe: "Vertical bar (|)"
+    encodings:
+      utf-8: "UTF-8"
+      windows-1252: "Windows-1252 (Latin-1)"
+    decimal_separators:
+      comma: "Comma (1234,56)"
+      dot: "Dot (1234.56)"
+    thousands_separators:
+      none: "None"
+      space: "Space (1 234)"
+      dot: "Dot (1.234)"
+      comma: "Comma (1,234)"
+      apostrophe: "Apostrophe (1'234)"
+    errors:
+      choice:
+        invalid: "Value not allowed: %{value}."
+      ledger:
+        blank: "Choose a financial ledger."
+        invalid: "This is not a financial ledger open to you."
+      format:
+        blank: "Choose the bank's CSV format."
+        unknown: "This CSV format no longer exists."
+        name:
+          blank: "Give the format a name."
+          too_long: "The name must not exceed %{max} characters."
+          taken: "A format already has this name."
+        institution:
+          too_long: "The bank name must not exceed %{max} characters."
+        thousands_separator:
+          same: "The thousands separator must differ from the decimal separator."
+        skip_lines:
+          range: "Header lines range from 0 to 50."
+        column:
+          range: "A column number ranges from 1 to %{max}."
+          repeated: "The same column is assigned twice."
+        amount_column:
+          blank: "Give the amount column, or the debit and credit columns."
+          both: "Give either the amount column or the debit and credit columns."
+      rule:
+        condition:
+          blank: "Give at least one condition: a text of the label or an amount."
+        label_contains:
+          too_long: "The text must not exceed %{max} characters."
+        amount:
+          positive: "A rule's amount is positive (the direction is chosen separately)."
+        position:
+          range: "The order ranges from 0 to 999."
+      counterpart:
+        blank: "Choose a card or an account."
+        both: "Choose a card or an account, not both."
+        card_unknown: "No card has the code %{code}."
+        account_unknown: "Account %{number} does not exist."
+        account_not_direct: "Account %{number} cannot be used in entries."
+      file:
+        blank: "Choose a file or paste its content."
+        too_large: "The file exceeds %{max} MiB."
+        binary: "This file is not a text statement (CSV, OFX or QIF)."
+        too_many_lines: "The file has more than %{max} lines: split it."
+        already_imported: "This file was already imported into this ledger on %{date}. Tick “Import anyway” to import it again."
+        malformed_csv: "The CSV file is malformed: %{detail}."
+        empty: "No transaction was read from this file."
+        not_ofx: "This file is not an OFX statement."
+        not_qif: "This file is not a QIF statement."
+        filename:
+          blank: "The file must have a name."
+      line:
+        date: "Line %{line}: unreadable date (%{value})."
+        amount: "Line %{line}: unreadable amount (%{value})."
+        zero: "Line %{line}: zero amount, line ignored."
+        label: "Line %{line}: empty label."
+        not_pending: "This line is no longer to be processed."
+        match_invalid: "This entry is not an open entry of the card for the line's amount."
+        none_selected: "Tick at least one line."
+        fitid_taken: "Transaction %{fitid} is already in this ledger."
+      import:
+        in_use: "Lines of this import have been transferred or reconciled: it is kept."
+      reconcile:
+        already: "This import's statement is already reconciled."
+        nothing: "No transferred line of this import is left to reconcile."

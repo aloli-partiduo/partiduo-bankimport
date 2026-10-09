@@ -1,0 +1,111 @@
+fr:
+  bankimport:
+    module:
+      name: "Import des relevés bancaires"
+    permissions:
+      read: "Consulter les relevés importés et la zone d'attente"
+      import: "Importer des relevés, choisir les contreparties, transférer et pointer"
+      admin: "Paramétrer les formats CSV et les règles, supprimer un import, purger les lignes écartées"
+    menu:
+      bankimport: "Relevés bancaires"
+      bankimport_import: "Importer un relevé"
+      bankimport_lines: "Lignes à traiter"
+      bankimport_history: "Historique des imports"
+      bankimport_formats: "Formats de relevé CSV"
+      bankimport_rules: "Règles de catégorisation"
+    kinds:
+      csv: "CSV"
+      ofx: "OFX"
+      qif: "QIF"
+    statuses:
+      pending: "À traiter"
+      transferred: "Transférée"
+      duplicate: "Doublon"
+      discarded: "Écartée"
+    directions:
+      any: "Entrée ou sortie"
+      in: "Entrée"
+      out: "Sortie"
+    separators:
+      comma: "Virgule (,)"
+      semicolon: "Point-virgule (;)"
+      tab: "Tabulation"
+      pipe: "Barre verticale (|)"
+    encodings:
+      utf-8: "UTF-8"
+      windows-1252: "Windows-1252 (Latin-1)"
+    decimal_separators:
+      comma: "Virgule (1234,56)"
+      dot: "Point (1234.56)"
+    thousands_separators:
+      none: "Aucun"
+      space: "Espace (1 234)"
+      dot: "Point (1.234)"
+      comma: "Virgule (1,234)"
+      apostrophe: "Apostrophe (1'234)"
+    errors:
+      choice:
+        invalid: "Valeur non admise : %{value}."
+      ledger:
+        blank: "Choisissez un journal financier."
+        invalid: "Ce journal n'est pas un journal financier qui vous est ouvert."
+      format:
+        blank: "Choisissez le format CSV de l'établissement."
+        unknown: "Ce format CSV n'existe plus."
+        name:
+          blank: "Donnez un nom au format."
+          too_long: "Le nom ne doit pas dépasser %{max} caractères."
+          taken: "Un format porte déjà ce nom."
+        institution:
+          too_long: "L'établissement ne doit pas dépasser %{max} caractères."
+        thousands_separator:
+          same: "Le séparateur de milliers doit différer du séparateur décimal."
+        skip_lines:
+          range: "Le nombre de lignes d'en-tête va de 0 à 50."
+        column:
+          range: "Un rang de colonne va de 1 à %{max}."
+          repeated: "Une même colonne est attribuée deux fois."
+        amount_column:
+          blank: "Indiquez la colonne du montant, ou celles du débit et du crédit."
+          both: "Indiquez soit la colonne du montant, soit celles du débit et du crédit."
+      rule:
+        condition:
+          blank: "Donnez au moins une condition : un texte du libellé ou un montant."
+        label_contains:
+          too_long: "Le texte ne doit pas dépasser %{max} caractères."
+        amount:
+          positive: "Le montant d'une règle est positif (le sens se choisit à part)."
+        position:
+          range: "L'ordre va de 0 à 999."
+      counterpart:
+        blank: "Choisissez une fiche ou un compte."
+        both: "Choisissez une fiche ou un compte, pas les deux."
+        card_unknown: "Aucune fiche n'a le code %{code}."
+        account_unknown: "Le compte %{number} n'existe pas."
+        account_not_direct: "Le compte %{number} n'est pas utilisable en saisie."
+      file:
+        blank: "Choisissez un fichier ou collez son contenu."
+        too_large: "Le fichier dépasse %{max} Mio."
+        binary: "Ce fichier n'est pas un relevé texte (CSV, OFX ou QIF)."
+        too_many_lines: "Le fichier compte plus de %{max} lignes : découpez-le."
+        already_imported: "Ce fichier a déjà été importé dans ce journal le %{date}. Cochez « Importer quand même » pour le reprendre."
+        malformed_csv: "Le fichier CSV est mal formé : %{detail}."
+        empty: "Aucune opération n'a été lue dans ce fichier."
+        not_ofx: "Ce fichier n'est pas un relevé OFX."
+        not_qif: "Ce fichier n'est pas un relevé QIF."
+        filename:
+          blank: "Le fichier doit avoir un nom."
+      line:
+        date: "Ligne %{line} : date illisible (%{value})."
+        amount: "Ligne %{line} : montant illisible (%{value})."
+        zero: "Ligne %{line} : montant nul, ligne ignorée."
+        label: "Ligne %{line} : libellé vide."
+        not_pending: "Cette ligne n'est plus à traiter."
+        match_invalid: "Cette écriture n'est pas une écriture ouverte de la fiche, du montant de la ligne."
+        none_selected: "Cochez au moins une ligne."
+        fitid_taken: "L'opération %{fitid} est déjà présente dans ce journal."
+      import:
+        in_use: "Des lignes de cet import ont été transférées ou pointées : il est conservé."
+      reconcile:
+        already: "Le relevé de cet import est déjà pointé."
+        nothing: "Aucune ligne transférée de cet import n'est à pointer."

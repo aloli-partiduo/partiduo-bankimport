@@ -1,0 +1,111 @@
+nl:
+  bankimport:
+    module:
+      name: "Import van bankafschriften"
+    permissions:
+      read: "Geïmporteerde afschriften en te verwerken lijnen raadplegen"
+      import: "Afschriften importeren, tegenrekeningen kiezen, overboeken en afpunten"
+      admin: "CSV-formaten en regels instellen, een import verwijderen, opzijgezette lijnen wissen"
+    menu:
+      bankimport: "Bankafschriften"
+      bankimport_import: "Een afschrift importeren"
+      bankimport_lines: "Te verwerken lijnen"
+      bankimport_history: "Importgeschiedenis"
+      bankimport_formats: "CSV-afschriftformaten"
+      bankimport_rules: "Categorisatieregels"
+    kinds:
+      csv: "CSV"
+      ofx: "OFX"
+      qif: "QIF"
+    statuses:
+      pending: "Te verwerken"
+      transferred: "Overgeboekt"
+      duplicate: "Dubbel"
+      discarded: "Opzijgezet"
+    directions:
+      any: "Inkomend of uitgaand"
+      in: "Inkomend"
+      out: "Uitgaand"
+    separators:
+      comma: "Komma (,)"
+      semicolon: "Puntkomma (;)"
+      tab: "Tab"
+      pipe: "Verticale streep (|)"
+    encodings:
+      utf-8: "UTF-8"
+      windows-1252: "Windows-1252 (Latin-1)"
+    decimal_separators:
+      comma: "Komma (1234,56)"
+      dot: "Punt (1234.56)"
+    thousands_separators:
+      none: "Geen"
+      space: "Spatie (1 234)"
+      dot: "Punt (1.234)"
+      comma: "Komma (1,234)"
+      apostrophe: "Apostrof (1'234)"
+    errors:
+      choice:
+        invalid: "Waarde niet toegelaten: %{value}."
+      ledger:
+        blank: "Kies een financieel dagboek."
+        invalid: "Dit is geen financieel dagboek dat voor u openstaat."
+      format:
+        blank: "Kies het CSV-formaat van de bank."
+        unknown: "Dit CSV-formaat bestaat niet meer."
+        name:
+          blank: "Geef het formaat een naam."
+          too_long: "De naam mag niet langer zijn dan %{max} tekens."
+          taken: "Er bestaat al een formaat met deze naam."
+        institution:
+          too_long: "De bank mag niet langer zijn dan %{max} tekens."
+        thousands_separator:
+          same: "Het duizendtalscheidingsteken moet verschillen van het decimaalteken."
+        skip_lines:
+          range: "Het aantal kopregels gaat van 0 tot 50."
+        column:
+          range: "Een kolomnummer gaat van 1 tot %{max}."
+          repeated: "Dezelfde kolom is twee keer toegewezen."
+        amount_column:
+          blank: "Geef de kolom van het bedrag, of die van debet en credit."
+          both: "Geef ofwel de kolom van het bedrag, ofwel die van debet en credit."
+      rule:
+        condition:
+          blank: "Geef minstens één voorwaarde: een tekst van de omschrijving of een bedrag."
+        label_contains:
+          too_long: "De tekst mag niet langer zijn dan %{max} tekens."
+        amount:
+          positive: "Het bedrag van een regel is positief (de richting wordt apart gekozen)."
+        position:
+          range: "De volgorde gaat van 0 tot 999."
+      counterpart:
+        blank: "Kies een fiche of een rekening."
+        both: "Kies een fiche of een rekening, niet beide."
+        card_unknown: "Geen enkele fiche heeft de code %{code}."
+        account_unknown: "Rekening %{number} bestaat niet."
+        account_not_direct: "Rekening %{number} kan niet gebruikt worden bij het boeken."
+      file:
+        blank: "Kies een bestand of plak de inhoud ervan."
+        too_large: "Het bestand is groter dan %{max} MiB."
+        binary: "Dit bestand is geen tekstafschrift (CSV, OFX of QIF)."
+        too_many_lines: "Het bestand telt meer dan %{max} lijnen: splits het."
+        already_imported: "Dit bestand werd al op %{date} in dit dagboek geïmporteerd. Vink „Toch importeren” aan om het opnieuw te importeren."
+        malformed_csv: "Het CSV-bestand is misvormd: %{detail}."
+        empty: "Er werd geen verrichting gelezen in dit bestand."
+        not_ofx: "Dit bestand is geen OFX-afschrift."
+        not_qif: "Dit bestand is geen QIF-afschrift."
+        filename:
+          blank: "Het bestand moet een naam hebben."
+      line:
+        date: "Lijn %{line}: onleesbare datum (%{value})."
+        amount: "Lijn %{line}: onleesbaar bedrag (%{value})."
+        zero: "Lijn %{line}: bedrag nul, lijn genegeerd."
+        label: "Lijn %{line}: lege omschrijving."
+        not_pending: "Deze lijn moet niet meer verwerkt worden."
+        match_invalid: "Deze boeking is geen openstaande boeking van de fiche voor het bedrag van de lijn."
+        none_selected: "Vink minstens één lijn aan."
+        fitid_taken: "Verrichting %{fitid} staat al in dit dagboek."
+      import:
+        in_use: "Lijnen van deze import werden overgeboekt of afgepunt: hij blijft bewaard."
+      reconcile:
+        already: "Het afschrift van deze import is al afgepunt."
+        nothing: "Geen enkele overgeboekte lijn van deze import moet nog afgepunt worden."

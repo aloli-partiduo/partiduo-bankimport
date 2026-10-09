@@ -1,0 +1,38 @@
+name: partiduo-bankimport
+version: 0.1.0
+
+description: |
+  Extension d'import des relevés bancaires de Partiduo (ADR-011 D6) :
+  fichiers CSV paramétrables par établissement, OFX et QIF ; zone
+  d'attente des lignes proposées, doublons écartés, règles de
+  catégorisation apprises, passage dans un journal financier par le
+  contrat de la Comptabilité, pointage du relevé, historique des imports.
+  Commune aux dossiers professionnels et aux dossiers foyer.
+
+authors:
+  - Philippe Nénert <it+claude.ai@aloli.fr>
+
+crystal: ">= 1.19.1"
+
+license: AGPL-3.0-or-later
+
+targets:
+  partiduo-bankimport-manage:
+    main: manage.cr
+
+dependencies:
+  # Le cœur : registre, événements et contrat Partiduo::Api (Comptabilité,
+  # fiches, pièces jointes).
+  partiduo:
+    path: ../partiduo-app
+  marten:
+    path: ../../marten
+
+development_dependencies:
+  # L'interface qui monte ui/bulma/ : nécessaire aux specs et à manage.cr ;
+  # la distribution l'apporte elle-même.
+  partiduo-ui-bulma:
+    path: ../partiduo-ui-bulma
+  ameba:
+    github: crystal-ameba/ameba
+    version: "~> 1.6"

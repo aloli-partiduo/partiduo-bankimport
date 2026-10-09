@@ -1,0 +1,128 @@
+= partiduo-bankimport — import des relevés bancaires
+:toc: left
+:toc-title: Table des matières
+:icons: font
+
+*Partiduo* est le portage en Crystal de https://noalyss.eu[NOALYSS], logiciel
+libre de comptabilité créé et maintenu par *Dany De Bontridder*. Partiduo
+n'est pas un projet officiel NOALYSS.
+
+Ce dépôt est l'extension `BANKIMPORT` de Partiduo (ADR-011 D6), successeur
+du greffon d'import bancaire de NOALYSS (`noalyss-plugins/importbank`, la
+source *legacy*) : on en porte les fonctions, pas le code. Les relevés de la
+banque — CSV paramétrable par établissement, OFX ou QIF — sont lus, leurs
+lignes *proposées* dans une zone d'attente, puis passées dans un journal
+financier par le service d'écriture de la Comptabilité. L'extension sert
+les dossiers professionnels comme les dossiers foyer (`partiduo-perso`
+déclarera `depends_on "BANKIMPORT"`).
+
+Spécification : `../partiduo-docs/adr/ADR-011-finances-personnelles.adoc`
+(D6), avec ADR-003 (contrat d'extension), ADR-005 (interface) et ADR-006
+(Comptabilité). Décisions (`D-BKI-*`) et amendements proposés :
+link:DECISIONS.adoc[]. Référence du contrat : link:doc/api/bankimport.adoc[].
+
+== Fonctions
+
+[cols="1,3",options="header"]
+|===
+|Fonction |Dans BANKIMPORT
+
+|Formats CSV par établissement
+|Séparateur, encodage (UTF-8, Windows-1252), lignes d'en-tête, format de
+date, séparateurs décimal et de milliers, rang des colonnes (date,
+libellé, montant signé ou débit et crédit, information, référence, tiers),
+inversion du signe. Équivalent des formats de l'application d'origine.
+
+|OFX et QIF
+|OFX 1 (SGML) et 2 (XML) : FITID, compte, devise, solde de fin ; QIF :
+sections de trésorerie, ordre des dates choisi. Genre reconnu au contenu.
+
+|Zone d'attente
+|Aperçu avant import (lignes illisibles signalées), lignes à traiter, à
+transférer, écartées ou doublons ; fichier conservé en pièce jointe par le
+socle.
+
+|Doublons
+|Par FITID (OFX) et par date, montant et libellé, en comptant les
+occurrences ; fichier déjà importé refusé ; écriture semblable déjà passée
+signalée.
+
+|Tiers ou compte
+|Contrepartie par ligne (fiche ou compte), en HTMX ; règles de
+catégorisation saisies ou *apprises* des choix de l'utilisateur ; lettrage
+proposé avec la facture ouverte de même montant.
+
+|Transfert
+|Une écriture par ligne par `Partiduo::Api::Accounting.post_financial`,
+pièce jointe comprise ; un refus reste sur la ligne. Une écriture extournée
+rend sa ligne à traiter (`entry.cancelled`).
+
+|Pointage
+|Le relevé d'un import est pointé par le rapprochement de la Comptabilité
+(`reconcile`), soldes de début et de fin.
+
+|Suppression et historique
+|Lignes écartées puis purgées ; historique des imports (période, totaux,
+compteurs, relevé pointé, fichier téléchargeable) ; suppression d'un import
+non transféré.
+|===
+
+Correspondance avec l'application d'origine : l'état « attente » devient une
+ligne à traiter dotée d'une contrepartie, « erreur » un message gardé sur la
+ligne, « à effacer » une ligne écartée ; le format CODA belge n'est pas
+porté (D-BKI-002).
+
+== Organisation
+
+[source]
+----
+src/
+├── partiduo-bankimport.cr       # point d'entrée du shard
+├── partiduo-bankimport/cli.cr   # migrations : require "partiduo-bankimport/cli"
+└── bankimport/                  # métier (application Marten « bankimport »)
+    ├── app.cr, manifest.cr      # code BANKIMPORT, permissions, menus, abonnement
+    ├── models/                  # tables bankimport_*
+    ├── migrations/              # 0001 : tables et contraintes
+    ├── parsers/                 # lecture CSV, OFX, QIF, montants, dates, encodages
+    ├── services/                # import, doublons, règles, transfert (interne)
+    ├── api/                     # contrat public Bankimport::Api
+    └── locales/                 # fr, en, nl
+ui/
+└── bulma/                       # interface pour partiduo-ui-bulma (application « bankimport_ui »)
+    ├── bulma.cr                 # routes sous /ext/BANKIMPORT/, compteur du menu
+    ├── dashboard_tile.cr        # tuile « Relevés à traiter »
+    ├── handlers/, templates/bankimport/, assets/bankimport/, locales/
+spec/fixtures/                   # relevés d'exemple (CSV, OFX 1 et 2, QIF)
+----
+
+== Composer une distribution
+
+[source,crystal]
+----
+require "partiduo-ui-bulma/partiduo_ui"
+require "partiduo-bankimport"
+require "partiduo-bankimport/ui/bulma"
+# installed_apps += Bankimport::INSTALLED_APPS + Bankimport::Ui::INSTALLED_APPS
+# ligne de commande : require "partiduo-bankimport/cli"
+----
+
+L'extension exige la Comptabilité (`depends_on "ACCOUNTING"`) et un journal
+financier adossé à sa fiche Banque ; elle s'active par dossier
+(`Partiduo::Api::Modules.activate`, écran « Modules »).
+
+== Commandes
+
+[source,sh]
+----
+cd prod-crystal/partiduo/partiduo-bankimport
+SKIP_MARTEN_CLI_PRECOMPILATION=1 shards install
+createdb -h /tmp partiduo_test_<agent>
+DATABASE_URL='postgres:///partiduo_test_<agent>?host=/tmp' crystal spec --order random
+crystal tool format src spec ui config scripts manage.cr && bin/ameba
+----
+
+== Version et licence
+
+Numéro dans `shard.yml` seulement (constante `Bankimport::VERSION` lue à la
+compilation) ; chaque commit en incrémente le dernier chiffre. Licence
+AGPL-3.0-or-later (fichier `LICENSE`).

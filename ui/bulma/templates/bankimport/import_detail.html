@@ -1,0 +1,57 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later. Un import de relevé (historique, D-BKI-007) : fichier, journal, genre, format, compte et solde lus, totaux, compteurs ; pointage du relevé par le rapprochement de la Comptabilité (référence, soldes de début et de fin) ; lignes de l'import avec leur statut. #}{% extend "ui/base.html" %}
+{% block title %}{{ title }}{% endblock title %}
+{% block scripts %}<link rel="stylesheet" href="{% asset 'bankimport/css/bankimport.css' %}">{% endblock scripts %}
+{% block crumbs %}{% include "ui/_crumbs.html" %}{% endblock crumbs %}
+{% block heading %}{{ title }}{% endblock heading %}
+{% block actions %}{% for action in actions %}{% include "ui/_action.html" %}{% endfor %}{% endblock actions %}
+{% block content %}
+{% if error %}<div class="notification is-danger is-light pd-alert" role="alert" id="bki-reconcile-error">{% include "ui/_icon.html" with name="triangle-alert" %}<div><p>{{ error }}</p></div></div>{% endif %}
+<section class="pd-panel" aria-labelledby="bki-import-facts">
+  <header><h2 id="bki-import-facts">{% translate "bankimport_ui.imports.facts" %}</h2>{% if import.reconciled %}<span class="tag is-success is-light" data-bki-reconciled>{% translate "bankimport_ui.imports.reconciled" %} {{ import.statement }}</span>{% endif %}</header>
+  <div class="pd-body">
+    <dl class="bki-facts">
+      <div><dt>{% translate "bankimport_ui.imports.ledger" %}</dt><dd class="pd-mono">{{ import.ledger }}</dd></div>
+      <div><dt>{% translate "bankimport_ui.imports.kind" %}</dt><dd>{{ import.kind }}{% if format_name %} · {{ format_name }}{% endif %}</dd></div>
+      <div><dt>{% translate "bankimport_ui.imports.created" %}</dt><dd>{{ import.created }}</dd></div>
+      {% if import.period %}<div><dt>{% translate "bankimport_ui.imports.period" %}</dt><dd>{{ import.period }}</dd></div>{% endif %}
+      {% if account_number %}<div><dt>{% translate "bankimport_ui.import.account_number" %}</dt><dd class="pd-mono">{{ account_number }}</dd></div>{% endif %}
+      {% if end_balance %}<div><dt>{% translate "bankimport_ui.import.end_balance" %}</dt><dd class="pd-mono">{{ end_balance }}</dd></div>{% endif %}
+      <div><dt>{% translate "bankimport_ui.imports.total_in" %}</dt><dd class="pd-mono bki-in">{{ total_in }}</dd></div>
+      <div><dt>{% translate "bankimport_ui.imports.total_out" %}</dt><dd class="pd-mono bki-out">{{ total_out }}</dd></div>
+      <div><dt>{% translate "bankimport_ui.imports.counts" %}</dt><dd data-bki-counts>{{ import.lines }} · {% translate "bankimport.statuses.pending" %} {{ import.pending }} · {% translate "bankimport.statuses.transferred" %} {{ import.transferred }} · {% translate "bankimport.statuses.duplicate" %} {{ import.duplicates }}</dd></div>
+    </dl>
+  </div>
+</section>
+{% if can_reconcile %}
+<section class="pd-panel" aria-labelledby="bki-reconcile-title">
+  <header><h2 id="bki-reconcile-title">{% translate "bankimport_ui.imports.reconcile" %}</h2></header>
+  <div class="pd-body">
+    <p class="help mb-3">{% translate "bankimport_ui.imports.reconcile_help" %}</p>
+    <form method="post" action="{{ reconcile_url }}" class="pd-form" novalidate data-bki-reconcile>
+      {% csrf_input %}
+      <div class="pd-form-grid">
+        <div class="field"><label class="label" for="bki-reference">{% translate "bankimport_ui.imports.reference" %}<span class="pd-required" aria-hidden="true"> *</span></label>
+          <input class="input pd-mono" type="text" id="bki-reference" name="reference" value="{{ reference }}" maxlength="40" required></div>
+        <div class="field"><label class="label" for="bki-start">{% translate "bankimport_ui.imports.start_balance" %}</label>
+          <input class="input pd-mono" type="text" inputmode="decimal" id="bki-start" name="start_balance" value="{{ start_balance }}"></div>
+        <div class="field"><label class="label" for="bki-end">{% translate "bankimport_ui.imports.end_balance" %}</label>
+          <input class="input pd-mono" type="text" inputmode="decimal" id="bki-end" name="end_balance" value="{{ end_balance_in }}"></div>
+      </div>
+      <div class="pd-form-actions"><button class="button is-primary pd-touch" type="submit">{% include "ui/_icon.html" with name="check" %}<span>{% translate "bankimport_ui.imports.reconcile_submit" %}</span></button></div>
+    </form>
+  </div>
+</section>
+{% endif %}
+<section class="pd-panel" aria-labelledby="bki-import-lines">
+  <header><h2 id="bki-import-lines">{% translate "bankimport_ui.lines.title" %}</h2></header>
+  {% if rows %}
+  <div class="pd-scroll"><table class="table is-fullwidth is-narrow bki-table" data-bki-import-lines>
+    <caption class="is-sr-only">{% translate "bankimport_ui.lines.title" %}</caption>
+    <thead><tr><th scope="col">{% translate "bankimport_ui.lines.date" %}</th><th scope="col">{% translate "bankimport_ui.lines.label" %}</th><th scope="col" class="amount">{% translate "bankimport_ui.lines.amount" %}</th><th scope="col">{% translate "bankimport_ui.lines.state" %}</th><th scope="col">{% translate "bankimport_ui.lines.counterpart" %}</th></tr></thead>
+    <tbody>{% for line in rows %}<tr data-bki-line="{{ line.id }}" data-bki-status="{{ line.status }}"><td class="pd-mono">{{ line.date }}</td><td>{{ line.label }}{% if line.extra %}<br><small class="pd-muted">{{ line.extra }}</small>{% endif %}</td><td class="amount bki-{{ line.direction }}">{{ line.amount }}</td><td><span class="tag {{ line.status_class }} is-light">{{ line.status_label }}</span>{% if line.entry_url %} <a href="{{ line.entry_url }}" class="pd-mono">{% translate "bankimport_ui.lines.entry" %} {{ line.entry_id }}</a>{% endif %}</td><td>{% if line.counterpart %}{{ line.counterpart }}{% endif %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="pd-body"><p class="pd-muted">{% translate "bankimport_ui.lines.none" %}</p></div>
+  {% endif %}
+</section>
+{% endblock content %}

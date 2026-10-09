@@ -1,0 +1,44 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later. Zone d'attente des lignes importées (ADR-011 D6) : filtres (journal, statut, texte, sans contrepartie), actions groupées sur les lignes cochées (transférer, écarter, reprendre, appliquer les règles) par le formulaire bki-bulk, et une ligne par opération (_line.html) avec sa contrepartie saisie en HTMX. Listes datalist des fiches et des comptes pour la saisie. #}{% extend "ui/base.html" %}
+{% block title %}{{ title }}{% endblock title %}
+{% block scripts %}<link rel="stylesheet" href="{% asset 'bankimport/css/bankimport.css' %}">{% endblock scripts %}
+{% block crumbs %}{% include "ui/_crumbs.html" %}{% endblock crumbs %}
+{% block heading %}{{ title }}{% endblock heading %}
+{% block actions %}{% for action in actions %}{% include "ui/_action.html" %}{% endfor %}{% endblock actions %}
+{% block content %}
+<form method="get" action="{% url 'bankimport:lines' %}" class="bki-filters mb-3" role="search" aria-label="{% translate 'bankimport_ui.lines.filters' %}">
+  {% if import %}<input type="hidden" name="import" value="{{ import }}">{% endif %}
+  <div class="field"><label class="label" for="bki-filter-ledger">{% translate "bankimport_ui.lines.ledger" %}</label>
+    <div class="select"><select id="bki-filter-ledger" name="ledger">{% for option in ledgers %}<option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></div></div>
+  <div class="field"><label class="label" for="bki-filter-status">{% translate "bankimport_ui.lines.status" %}</label>
+    <div class="select"><select id="bki-filter-status" name="status">{% for option in statuses %}<option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></div></div>
+  <div class="field"><label class="label" for="bki-filter-q">{% translate "ui.table.search" %}</label>
+    <input class="input" type="search" id="bki-filter-q" name="q" value="{{ q }}"></div>
+  <label class="checkbox pd-check" for="bki-filter-unassigned"><input type="checkbox" id="bki-filter-unassigned" name="unassigned" value="1"{% if unassigned %} checked{% endif %}> {% translate "bankimport_ui.lines.unassigned" %}</label>
+  <button class="button pd-touch" type="submit">{% translate "ui.table.filter" %}</button>
+</form>
+<section class="pd-panel" aria-labelledby="bki-lines-title">
+  <header><h2 id="bki-lines-title">{% translate "bankimport_ui.lines.title" %}</h2><span class="pd-muted" role="status" data-bki-summary>{{ summary }}</span></header>
+  {% if can_import %}
+  <form method="post" action="{% url 'bankimport:lines_action' %}" id="bki-bulk" class="bki-bulk pd-body" data-bki-bulk>
+    {% csrf_input %}<input type="hidden" name="next" value="{{ next }}">
+    <span class="pd-muted">{% translate "bankimport_ui.lines.bulk" %}</span>
+    {% if pending %}<button class="button is-primary is-small pd-touch" type="submit" name="action" value="transfer">{% include "ui/_icon.html" with name="send" %}<span>{% translate "bankimport_ui.lines.transfer" %}</span></button>
+    <button class="button is-small pd-touch" type="submit" name="action" value="apply_rules">{% include "ui/_icon.html" with name="sliders-horizontal" %}<span>{% translate "bankimport_ui.lines.apply_rules" %}</span></button>
+    <button class="button is-small pd-touch" type="submit" name="action" value="discard">{% include "ui/_icon.html" with name="x" %}<span>{% translate "bankimport_ui.lines.discard" %}</span></button>{% endif %}
+    {% if restorable %}<button class="button is-small pd-touch" type="submit" name="action" value="restore">{% include "ui/_icon.html" with name="undo-2" %}<span>{% translate "bankimport_ui.lines.restore" %}</span></button>{% endif %}
+  </form>
+  {% endif %}
+  {% if rows %}
+  <div class="pd-scroll"><table class="table is-fullwidth is-narrow bki-table" id="bki-lines" data-bki-lines>
+    <caption class="is-sr-only">{% translate "bankimport_ui.lines.title" %}</caption>
+    <thead><tr><th scope="col"><span class="is-sr-only">{% translate "bankimport_ui.lines.select" %}</span></th><th scope="col">{% translate "bankimport_ui.lines.date" %}</th><th scope="col">{% translate "bankimport_ui.lines.label" %}</th><th scope="col" class="amount">{% translate "bankimport_ui.lines.amount" %}</th><th scope="col">{% translate "bankimport_ui.lines.state" %}</th><th scope="col">{% translate "bankimport_ui.lines.counterpart" %}</th></tr></thead>
+    <tbody>{% for line in rows %}{% include "bankimport/_line.html" %}{% endfor %}</tbody>
+  </table></div>
+  {% if truncated %}<div class="pd-body"><p class="help">{{ truncated }}</p></div>{% endif %}
+  {% else %}
+  <div class="pd-body"><p class="pd-muted" data-bki-empty>{% translate "bankimport_ui.lines.none" %}</p></div>
+  {% endif %}
+</section>
+<datalist id="bki-cards">{% for card in cards %}<option value="{{ card.value }}">{{ card.label }}</option>{% endfor %}</datalist>
+<datalist id="bki-accounts">{% for account in accounts %}<option value="{{ account.value }}">{{ account.label }}</option>{% endfor %}</datalist>
+{% endblock content %}
