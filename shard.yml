@@ -1,5 +1,5 @@
 name: partiduo-bankimport
-version: 0.1.1
+version: 0.1.2
 
 description: |
   Extension d'import des relevés bancaires de Partiduo (ADR-011 D6) :
@@ -24,15 +24,18 @@ dependencies:
   # Le cœur : registre, événements et contrat Partiduo::Api (Comptabilité,
   # fiches, pièces jointes).
   partiduo:
-    path: ../partiduo-app
+    github: aloli-partiduo/partiduo-app
+    branch: development
   marten:
-    path: ../../prod-crystal/marten
+    github: aloli-crystal/marten
+    branch: production
 
 development_dependencies:
   # L'interface qui monte ui/bulma/ : nécessaire aux specs et à manage.cr ;
   # la distribution l'apporte elle-même.
   partiduo-ui-bulma:
-    path: ../partiduo-ui-bulma
+    github: aloli-partiduo/partiduo-ui-bulma
+    branch: development
   ameba:
     github: crystal-ameba/ameba
     version: "~> 1.6"
