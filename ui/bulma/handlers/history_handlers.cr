@@ -23,7 +23,7 @@ module Bankimport
         rows = Api.imports(actor, query("ledger").to_i64?, limit: 1000).map do |view|
           url = Ui.url("import_detail", id: view.id)
           Table::Row.new([
-            Table::Cell.new(fmt.date(view.created_at), url, sort: view.created_at.to_s("%Y-%m-%d %H:%M:%S")),
+            Table::Cell.new(Ui.stamp(fmt, view.created_at), url, sort: view.created_at.to_rfc3339),
             Table::Cell.new(view.filename, url),
             Table::Cell.new(I18n.t(view.kind_key)),
             Table::Cell.new(view.ledger_code),
@@ -88,7 +88,7 @@ module Bankimport
       end
 
       private def default_reference(view : Api::ImportView) : String
-        date = view.statement_on || view.last_date || view.created_at
+        date = view.statement_on || view.last_date || view.created_at.in(Partiduo::Api::Core.time_zone)
         "#{view.ledger_code}-#{date.to_s("%Y%m%d")}-#{view.id}"[0, 40]
       end
     end

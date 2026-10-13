@@ -155,6 +155,25 @@ describe "Écrans des relevés bancaires sous /ext/BANKIMPORT/ (ADR-011 D6, ADR-
     Api.import_detail(S.system, view.id).reconciled?.should be_true
   end
 
+  it "date les imports dans le fuseau du dossier, pas en UTC" do
+    browser = signed_in
+    view = S.import("releve.ofx")
+    # 22 h 30 UTC le 12 octobre : déjà le 13 à 0 h 30 à Paris (UTC+2).
+    Bankimport::Import.filter(id: view.id).update(created_at: Time.utc(2026, 10, 12, 22, 30))
+    Partiduo::Api::Core.time_zone.name.should eq("Europe/Paris")
+
+    history = browser.get("/ext/BANKIMPORT/imports").html
+    history.should contain("13/10/2026 00:30")
+    history.should_not contain("12/10/2026")
+    browser.get("/ext/BANKIMPORT/imports?format=csv").content.should contain("13/10/2026 00:30")
+    detail = browser.get("/ext/BANKIMPORT/imports/#{view.id}").html
+    detail.should contain("13/10/2026 00:30")
+
+    # Même fichier importé une seconde fois : la date rappelée est celle du dossier.
+    refused = Api.import_file(S.accountant, S.input("releve.ofx"))
+    refused.errors.first.params["date"].should eq("2026-10-13")
+  end
+
   it "paramètre les formats CSV et les règles (bankimport.admin)" do
     browser = signed_in
     browser.get("/ext/BANKIMPORT/formats").html.should contain("Aucun format : créez celui de votre établissement.")

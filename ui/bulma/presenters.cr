@@ -35,6 +35,13 @@ module Bankimport
       value ? "1" : nil
     end
 
+    # Horodatage du contrat (UTC) présenté dans le fuseau du dossier
+    # (`Partiduo::Api::Core.time_zone`) : date de la langue et heure. Un
+    # import fait le 13 octobre à 0 h 30 à Paris n'apparaît pas au 12.
+    def self.stamp(fmt : PartiduoUi::Format, value : Time) : String
+      fmt.datetime(value, Partiduo::Api::Core.time_zone)
+    end
+
     # Format de date affiché dans la langue (`dd/mm/yyyy` → `JJ/MM/AAAA`).
     def self.date_format_label(code : String) : String
       day, month, year = I18n.t("bankimport_ui.date_letters").split(',')
@@ -101,7 +108,7 @@ module Bankimport
           "filename"    => view.filename,
           "kind"        => I18n.t(view.kind_key),
           "ledger"      => view.ledger_code,
-          "created"     => fmt.date(view.created_at),
+          "created"     => Ui.stamp(fmt, view.created_at),
           "period"      => view.first_date.try { |first| "#{fmt.date(first)} – #{fmt.date(view.last_date)}" },
           "lines"       => view.line_count.to_s,
           "pending"     => view.pending_count.to_s,
