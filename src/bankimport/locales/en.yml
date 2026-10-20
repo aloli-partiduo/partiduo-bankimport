@@ -106,6 +106,15 @@ en:
         fitid_taken: "Transaction %{fitid} is already in this ledger."
       import:
         in_use: "Lines of this import have been transferred or reconciled: it is kept."
+      payee:
+        too_long: "The payee must not exceed %{max} characters."
+      relink:
+        entry_unknown: "Entry %{id} does not exist or is not open to you."
+        entry_cancelled: "This entry is reversed, or is a reversal: choose the entry that replaces it."
+        ledger: "This entry is not in the line's journal."
+        amount: "This entry moves %{amount} on the bank account, the line %{expected}."
+        date: "This entry is dated more than %{days} days away from the line."
+        entry_taken: "Another imported line is already linked to this entry."
       reconcile:
         already: "This import's statement is already reconciled."
         nothing: "No transferred line of this import is left to reconcile."

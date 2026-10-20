@@ -82,21 +82,22 @@ module Bankimport
       duplicates = Duplicates.detect(ledger_id, parsed.lines)
       lines = parsed.lines.map_with_index do |line, index|
         Api::PreviewLineView.new(position: line.position, date: line.date, amount: line.amount, label: line.label,
-          extra: line.extra, reference: line.reference, fitid: line.fitid, duplicate: !duplicates[index].nil?)
+          extra: line.extra, reference: line.reference, fitid: line.fitid, duplicate: !duplicates[index].nil?,
+          payee: line.payee, iban: line.iban)
       end
       Api::PreviewView.new(kind: kind, lines: lines, issues: issues(parsed), same_file_import_id: same.try(&.id.try(&.to_i64)),
         account_number: parsed.account_number, end_balance: parsed.end_balance, statement_on: parsed.statement_on)
     end
 
-    # Type MIME sous lequel le socle conserve le fichier : les types qu'il
-    # admet ne comptent ni OFX ni QIF (amendement proposé A-BKI-1).
-    def self.content_type(kind : String, content : Bytes) : String
+    # Type MIME sous lequel le socle conserve le fichier (D-BKI-014) : les
+    # types des relevés que le socle admet depuis A-BKI-1 (D-AMD-001 du
+    # cœur). Les fichiers conservés avant restent en `text/plain` ou
+    # `application/xml` : ils se relisent de même (`import_content`).
+    def self.content_type(kind : String) : String
       case kind
-      when "csv" then "text/csv"
-      when "ofx"
-        head = String.new(content[0, Math.min(content.size, 64)]).scrub.lchop('\u{FEFF}').lstrip
-        head.starts_with?("<?xml") ? "application/xml" : "text/plain"
-      else "text/plain"
+      when "ofx" then "application/x-ofx"
+      when "qif" then "application/qif"
+      else            "text/csv"
       end
     end
 
@@ -119,7 +120,8 @@ module Bankimport
         created = Line.create!(
           import_id: row.id, ledger_id: input.ledger_id, position: line.position, date: line.date, amount: line.amount,
           label: line.label, extra: line.extra, reference: line.reference, fitid: line.fitid,
-          counterparty: line.counterparty, fingerprint: Duplicates.fingerprint(line.date, line.amount, line.label),
+          counterparty: line.counterparty, payee: line.payee, iban: line.iban,
+          fingerprint: Duplicates.fingerprint(line.date, line.amount, line.label),
           status: status, duplicate_of_id: duplicate_of, card_code: "", account: "", error_key: "", error_params: "",
         )
         created_by_fitid[line.fitid] ||= created.id!.to_i64 unless line.fitid.empty? || status == "duplicate"
@@ -128,7 +130,7 @@ module Bankimport
       row.duplicate_count = lines.count(&.status.==("duplicate"))
       row.save!
       pending = lines.select(&.status.==("pending"))
-      Categorizer.apply(pending)
+      Categorizer.apply(actor, pending)
       suggest_matches(actor, pending)
       Duplicates.flag_recorded(actor, pending)
       row

@@ -9,7 +9,10 @@ module Bankimport
     alias FieldError = Partiduo::Api::FieldError
 
     COLUMNS = %w[date_column label_column amount_column debit_column credit_column extra_column reference_column
-      counterparty_column]
+      counterparty_column iban_column]
+
+    # Longueur d'un bénéficiaire posé par une règle ou choisi pour une ligne.
+    MAX_PAYEE = 120
 
     def self.format_errors(actor : Partiduo::Api::Actor, input : Api::FormatInput, id : Int64?) : Array(FieldError)
       errors = [] of FieldError
@@ -47,6 +50,7 @@ module Bankimport
         "date_column" => input.date_column, "label_column" => input.label_column, "amount_column" => input.amount_column,
         "debit_column" => input.debit_column, "credit_column" => input.credit_column, "extra_column" => input.extra_column,
         "reference_column" => input.reference_column, "counterparty_column" => input.counterparty_column,
+        "iban_column" => input.iban_column,
       }
       columns.each do |field, value|
         next if value.nil? || (1..Api::MAX_COLUMN).includes?(value)
@@ -80,6 +84,7 @@ module Bankimport
       row.reference_column = input.reference_column
       row.counterparty_column = input.counterparty_column
       row.negate = input.negate
+      row.iban_column = input.iban_column
       row
     end
 
@@ -95,6 +100,7 @@ module Bankimport
       end
       choice(errors, "direction", input.direction, Api::DIRECTIONS)
       errors << Records.error("position", "rule.position.range") unless (0..999).includes?(input.position)
+      payee_errors(input.payee, errors)
       counterpart_errors(actor, input.card_code, input.account, errors)
       input.ledger_id.try { |ledger_id| Records.financial_ledger(actor, ledger_id, "ledger_id", errors) }
       errors
@@ -109,7 +115,14 @@ module Bankimport
       row.ledger_id = input.ledger_id
       row.position = input.position
       row.active = input.active
+      row.payee = Parsers.clean(input.payee, MAX_PAYEE)
       row
+    end
+
+    # Bénéficiaire d'une règle ou d'une ligne : 120 caractères au plus.
+    def self.payee_errors(payee : String?, errors : Array(FieldError)) : Nil
+      return unless payee && payee.strip.size > MAX_PAYEE
+      errors << Records.error("payee", "payee.too_long", {"max" => MAX_PAYEE.to_s})
     end
 
     # Fiche *ou* compte, existant : la fiche par son quick code, le compte

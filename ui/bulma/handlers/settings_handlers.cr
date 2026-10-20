@@ -38,7 +38,7 @@ module Bankimport
     # Formulaire d'un format CSV (création, modification).
     abstract class FormatScreen < Handler
       COLUMNS = %w[date_column label_column amount_column debit_column credit_column extra_column reference_column
-        counterparty_column]
+        counterparty_column iban_column]
       FIELDS = %w[name institution ledger_id separator encoding skip_lines date_format decimal_separator thousands_separator
         negate] + COLUMNS
 
@@ -57,6 +57,7 @@ module Bankimport
           "amount_column" => view.amount_column.to_s, "debit_column" => view.debit_column.to_s,
           "credit_column" => view.credit_column.to_s, "extra_column" => view.extra_column.to_s,
           "reference_column" => view.reference_column.to_s, "counterparty_column" => view.counterparty_column.to_s,
+          "iban_column" => view.iban_column.to_s,
         }
       end
 
@@ -115,7 +116,8 @@ module Bankimport
           date_column: date_column, label_column: label_column,
           amount_column: columns["amount_column"], debit_column: columns["debit_column"],
           credit_column: columns["credit_column"], extra_column: columns["extra_column"],
-          reference_column: columns["reference_column"], counterparty_column: columns["counterparty_column"])
+          reference_column: columns["reference_column"], counterparty_column: columns["counterparty_column"],
+          iban_column: columns["iban_column"])
       end
 
       def format_crumbs(title : String) : Array(Screen::Crumb)
@@ -196,6 +198,7 @@ module Bankimport
           Table::Column.new("amount", I18n.t("bankimport_ui.rules.amount"), "number"),
           Table::Column.new("direction", I18n.t("bankimport_ui.rules.direction"), secondary: true),
           Table::Column.new("target", I18n.t("bankimport_ui.rules.target")),
+          Table::Column.new("payee", I18n.t("bankimport_ui.rules.payee"), secondary: true),
           Table::Column.new("origin", I18n.t("bankimport_ui.rules.origin"), secondary: true),
           Table::Column.new("hits", I18n.t("bankimport_ui.rules.hits"), "number"),
         ]
@@ -208,6 +211,7 @@ module Bankimport
             Table::Cell.new(view.amount.try { |amount| fmt.amount(amount) } || "", sort: view.amount || BigDecimal.new(0)),
             Table::Cell.new(I18n.t(view.direction_key)),
             Table::Cell.new(view.card_code.presence || view.account, tag: view.active ? nil : I18n.t("bankimport_ui.rules.inactive")),
+            Table::Cell.new(view.payee),
             Table::Cell.new(origin),
             Table::Cell.new(view.hits.to_s, sort: BigDecimal.new(view.hits)),
           ], view.active ? "" : "pd-muted")
@@ -222,13 +226,13 @@ module Bankimport
     end
 
     abstract class RuleScreen < Handler
-      FIELDS = %w[label_contains amount direction card_code account ledger_id position active]
+      FIELDS = %w[label_contains amount direction card_code account payee ledger_id position active]
 
       def values_of(view : Api::RuleView?) : Hash(String, String)
         return {"direction" => "any", "position" => "100", "active" => "1"} unless view
         {
           "label_contains" => view.label_contains, "amount" => view.amount.try { |amount| fmt.input_number(amount) } || "",
-          "direction" => view.direction, "card_code" => view.card_code, "account" => view.account,
+          "direction" => view.direction, "card_code" => view.card_code, "account" => view.account, "payee" => view.payee,
           "ledger_id" => view.ledger_id.to_s, "position" => view.position.to_s, "active" => view.active ? "1" : "",
         }
       end
@@ -253,6 +257,8 @@ module Bankimport
           Form::Field.new("card_code", I18n.t("bankimport_ui.rules.card_code"), value: value.call("card_code"), mono: true,
             maxlength: 64, help: I18n.t("bankimport_ui.rules.target_help")),
           Form::Field.new("account", I18n.t("bankimport_ui.rules.account"), value: value.call("account"), mono: true, maxlength: 40),
+          Form::Field.new("payee", I18n.t("bankimport_ui.rules.payee"), value: value.call("payee"), maxlength: 120,
+            help: I18n.t("bankimport_ui.rules.payee_help")),
           Form::Field.new("position", I18n.t("bankimport_ui.rules.position"), "number", value.call("position"), mono: true),
           Form::Field.new("active", I18n.t("bankimport_ui.rules.active"), "checkbox", value.call("active")),
         ]
@@ -268,7 +274,7 @@ module Bankimport
         return if form.invalid
         Api::RuleInput.new(label_contains: field("label_contains"), amount: amount, direction: field("direction"),
           card_code: field("card_code"), account: field("account"), ledger_id: id_field("ledger_id"),
-          position: position || 100, active: field("active") == "1")
+          position: position || 100, active: field("active") == "1", payee: field("payee"))
       end
 
       def rule_crumbs(title : String) : Array(Screen::Crumb)

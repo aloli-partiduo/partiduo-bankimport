@@ -34,6 +34,8 @@ module Bankimport
     # Format CSV d'un établissement (D-BKI-002). Le montant est lu dans
     # `amount_column` (signé), ou dans `debit_column` et `credit_column` ;
     # `negate` inverse le signe lu (relevé de carte : dépense positive).
+    # `counterparty_column` (tiers) donne aussi le bénéficiaire des lignes ;
+    # `iban_column` : IBAN de la contrepartie, qui propose sa fiche.
     record FormatInput,
       name : String,
       date_column : Int32,
@@ -52,7 +54,8 @@ module Bankimport
       date_format : String = "dd/mm/yyyy",
       decimal_separator : String = "comma",
       thousands_separator : String = "none",
-      negate : Bool = false
+      negate : Bool = false,
+      iban_column : Int32? = nil
 
     # Fichier à importer dans le journal financier `ledger_id`.
     #
@@ -72,7 +75,7 @@ module Bankimport
       allow_same_file : Bool = false
 
     # Recherche dans la zone d'attente : journal, import, statut (`nil` :
-    # tous), texte (libellé, information, tiers, référence), lignes sans
+    # tous), texte (libellé, information, tiers, bénéficiaire, référence), lignes sans
     # contrepartie seulement.
     record LineQuery,
       ledger_id : Int64? = nil,
@@ -85,16 +88,21 @@ module Bankimport
 
     # Contrepartie choisie pour une ligne : fiche (quick code) *ou* compte ;
     # `match_line_id` : ligne d'écriture ouverte de la fiche à lettrer au
-    # transfert ; `learn` : en tirer une règle de catégorisation (D-BKI-006).
+    # transfert ; `learn` : en tirer une règle de catégorisation (D-BKI-006) ;
+    # `payee` : bénéficiaire de la ligne (A-PER-2) — `nil` garde celui de la
+    # ligne, `""` le retire ; changé, il est appris avec la règle.
     record CounterpartInput,
       card_code : String = "",
       account : String = "",
       match_line_id : Int64? = nil,
-      learn : Bool = true
+      learn : Bool = true,
+      payee : String? = nil
 
     # Règle de catégorisation (D-BKI-006) : au moins une condition (libellé
     # qui contient, montant absolu égal), une contrepartie (fiche *ou*
-    # compte) ; `ledger_id` nul : tous les journaux.
+    # compte) ; `ledger_id` nul : tous les journaux ; `payee` : bénéficiaire
+    # posé sur la ligne (A-PER-2, 120 caractères ; vide : celui du fichier).
+    # Le « libellé contient » cherche aussi dans le bénéficiaire lu.
     record RuleInput,
       label_contains : String = "",
       amount : BigDecimal? = nil,
@@ -103,7 +111,8 @@ module Bankimport
       account : String = "",
       ledger_id : Int64? = nil,
       position : Int32 = 100,
-      active : Bool = true
+      active : Bool = true,
+      payee : String = ""
 
     # Pointage du relevé d'un import (D-BKI-010) : référence du relevé et
     # soldes de début et de fin, passés au rapprochement de la Comptabilité.
@@ -134,7 +143,8 @@ module Bankimport
       reference_column : Int32?,
       counterparty_column : Int32?,
       negate : Bool,
-      import_count : Int32
+      import_count : Int32,
+      iban_column : Int32? = nil
 
     # Import (historique, D-BKI-007) et état de ses lignes.
     record ImportView,
@@ -175,7 +185,8 @@ module Bankimport
 
     # Ligne de la zone d'attente. `card_name`, `account_label` : relus dans
     # le cœur quand l'acteur peut les lire ; `error` : refus du dernier
-    # transfert.
+    # transfert ; `payee` : bénéficiaire (lu dans le fichier ou posé par une
+    # règle, A-PER-2) ; `iban` : IBAN de la contrepartie lu dans le fichier.
     record LineView,
       id : Int64,
       import_id : Int64,
@@ -199,7 +210,9 @@ module Bankimport
       recorded_entry_id : Int64?,
       entry_id : Int64?,
       reversed_entry_id : Int64?,
-      error : Partiduo::Api::FieldError? do
+      error : Partiduo::Api::FieldError?,
+      payee : String = "",
+      iban : String = "" do
       def pending? : Bool
         status == "pending"
       end
@@ -228,7 +241,9 @@ module Bankimport
       extra : String,
       reference : String,
       fitid : String,
-      duplicate : Bool
+      duplicate : Bool,
+      payee : String = "",
+      iban : String = ""
 
     # Aperçu d'un import : genre reconnu, lignes, anomalies (champ
     # `lines[<rang>]` ou `content`), import antérieur du même fichier,
@@ -266,7 +281,8 @@ module Bankimport
       active : Bool,
       learned : Bool,
       hits : Int32,
-      last_used_at : Time? do
+      last_used_at : Time?,
+      payee : String = "" do
       def direction_key : String
         "bankimport.directions.#{direction}"
       end

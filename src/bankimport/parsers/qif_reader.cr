@@ -76,7 +76,7 @@ module Bankimport
         label, extra = texts(payee, record)
         return parsed.issue(position, "line.label") if label.empty?
         parsed.lines << ParsedLine.new(position, date, amount, label, extra: extra,
-          reference: Parsers.clean(record['N']? || "", 64), counterparty: payee)
+          reference: Parsers.clean(record['N']? || "", 64), counterparty: payee, payee: payee)
       end
 
       # Libellé (bénéficiaire, à défaut mémo) et information complémentaire

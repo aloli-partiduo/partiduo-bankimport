@@ -19,12 +19,15 @@ module Bankimport
       extra_column : Int32? = nil,
       reference_column : Int32? = nil,
       counterparty_column : Int32? = nil,
-      negate : Bool = false
+      negate : Bool = false,
+      iban_column : Int32? = nil
 
     # Lecture d'un relevé CSV selon le format de l'établissement (D-BKI-002) :
     # lignes d'en-tête sautées, lignes vides ignorées ; montant signé, ou
     # crédit moins débit (valeurs absolues : une banque qui écrit le débit en
-    # négatif est lue de même) ; `negate` inverse le signe. Une ligne de
+    # négatif est lue de même) ; `negate` inverse le signe. La colonne
+    # « tiers » donne aussi le bénéficiaire de la ligne ; la colonne IBAN,
+    # l'IBAN de la contrepartie. Une ligne de
     # montant nul (ligne d'information, solde) est ignorée et signalée.
     module CsvReader
       SEPARATORS = {"comma" => ',', "semicolon" => ';', "tab" => '\t', "pipe" => '|'}
@@ -67,9 +70,10 @@ module Bankimport
         extra = Parsers.clean(cell.call(settings.extra_column), 2000)
         label = extra[0, 255] if label.empty?
         return parsed.issue(position, "line.label") if label.empty?
+        counterparty = Parsers.clean(cell.call(settings.counterparty_column))
         parsed.lines << ParsedLine.new(position, date, amount, label, extra: label == extra ? "" : extra,
           reference: Parsers.clean(cell.call(settings.reference_column), 64),
-          counterparty: Parsers.clean(cell.call(settings.counterparty_column)))
+          counterparty: counterparty, payee: counterparty, iban: Parsers.iban(cell.call(settings.iban_column)))
       end
 
       # Montant signé de la ligne (`negate` appliqué), ou `nil` avec

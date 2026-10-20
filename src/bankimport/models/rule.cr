@@ -3,7 +3,8 @@
 module Bankimport
   # Règle de catégorisation (D-BKI-006) : « le libellé contient… », « le
   # montant vaut… », sens (entrée, sortie ou les deux), journal (ou tous),
-  # alors telle fiche (`card_code`) ou tel compte (`account`). Apprise d'un
+  # alors telle fiche (`card_code`) ou tel compte (`account`), et tel
+  # bénéficiaire (`payee`, facultatif, A-PER-2). Apprise d'un
   # choix de l'utilisateur (`learned`) ou saisie ; `hits` et `last_used_at`
   # comptent les propositions faites. Les règles sont essayées par
   # `position`, puis de la plus précise à la plus générale. Interne.
@@ -21,6 +22,7 @@ module Bankimport
     field :hits, :int, default: 0
     field :last_used_at, :date_time, blank: true, null: true
     field :created_by_id, :big_int, blank: true, null: true
+    field :payee, :string, max_size: 120, blank: true, default: ""
 
     with_timestamp_fields
   end

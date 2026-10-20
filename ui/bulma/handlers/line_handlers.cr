@@ -70,8 +70,8 @@ module Bankimport
     end
 
     # Contrepartie d'une ligne (formulaire de la ligne) : fiche *ou* compte,
-    # règle apprise si « Mémoriser » est coché. En HTMX, la ligne mise à
-    # jour (ou refusée, avec son message) remplace l'ancienne.
+    # bénéficiaire, règle apprise si « Mémoriser » est coché. En HTMX, la
+    # ligne mise à jour (ou refusée, avec son message) remplace l'ancienne.
     class LineHandler < Handler
       def get
         go(Ui.url("lines"))
@@ -79,7 +79,7 @@ module Bankimport
 
       def post
         input = Api::CounterpartInput.new(card_code: field("card_code"), account: field("account"),
-          learn: field("learn") == "1")
+          learn: field("learn") == "1", payee: request.data.has_key?("payee") ? field("payee") : nil)
         result = Api.set_counterpart(actor, id_param, input)
         if htmx?
           view = result.success? ? result.value! : Api.line(actor, id_param)
@@ -107,6 +107,28 @@ module Bankimport
           return fragment(view, result.success? ? nil : messages(result), result.success? ? 200 : 422)
         end
         after(result, "bankimport_ui.flash.cleared", back(Ui.url("lines")))
+      end
+    end
+
+    # Rattache une ligne à traiter à l'écriture déjà passée qui la porte
+    # (A-PER-3, D-BKI-015) : l'écriture signalée, ou celle qui corrige
+    # l'écriture extournée. En HTMX, la ligne remplace l'ancienne.
+    class LineRelinkHandler < LineHandler
+      def post
+        entry_id = field("entry_id").strip.to_i64?
+        if entry_id.nil?
+          message = fmt.message(Partiduo::Api::FieldError.new("entry_id", "bankimport.errors.relink.entry_unknown",
+            {"id" => field("entry_id").strip}))
+          return fragment(Api.line(actor, id_param), message, 422) if htmx?
+          flash["danger"] = message
+          return go(back(Ui.url("lines")))
+        end
+        result = Api.relink(actor, id_param, entry_id)
+        if htmx?
+          view = result.success? ? result.value! : Api.line(actor, id_param)
+          return fragment(view, result.success? ? nil : messages(result), result.success? ? 200 : 422)
+        end
+        after(result, "bankimport_ui.flash.relinked", back(Ui.url("lines")))
       end
     end
 

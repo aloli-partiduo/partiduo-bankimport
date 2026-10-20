@@ -106,6 +106,15 @@ fr:
         fitid_taken: "L'opération %{fitid} est déjà présente dans ce journal."
       import:
         in_use: "Des lignes de cet import ont été transférées ou pointées : il est conservé."
+      payee:
+        too_long: "Le bénéficiaire ne doit pas dépasser %{max} caractères."
+      relink:
+        entry_unknown: "L'écriture %{id} n'existe pas ou ne vous est pas ouverte."
+        entry_cancelled: "Cette écriture est extournée, ou c'est une extourne : choisissez l'écriture qui la remplace."
+        ledger: "Cette écriture n'est pas dans le journal de la ligne."
+        amount: "Cette écriture porte %{amount} sur le compte de banque, la ligne %{expected}."
+        date: "Cette écriture est datée à plus de %{days} jours de la ligne."
+        entry_taken: "Une autre ligne importée est déjà rattachée à cette écriture."
       reconcile:
         already: "Le relevé de cet import est déjà pointé."
         nothing: "Aucune ligne transférée de cet import n'est à pointer."

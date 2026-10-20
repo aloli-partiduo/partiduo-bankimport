@@ -5,7 +5,8 @@ module Bankimport
   # encodage, lignes d'en-tête à sauter, format de date, séparateurs
   # décimal et de milliers, rang (à partir de 1) de chaque colonne. Le
   # montant est lu dans une colonne signée, ou dans deux colonnes « débit »
-  # et « crédit ». `ledger_id` : journal financier proposé à l'import.
+  # et « crédit ». `ledger_id` : journal financier proposé à l'import ;
+  # `iban_column` : IBAN de la contrepartie, s'il est donné.
   # Interne.
   class CsvFormat < Marten::Model
     field :id, :big_int, primary_key: true, auto: true
@@ -27,6 +28,7 @@ module Bankimport
     field :reference_column, :int, blank: true, null: true
     field :counterparty_column, :int, blank: true, null: true
     field :negate, :bool, default: false
+    field :iban_column, :int, blank: true, null: true
 
     with_timestamp_fields
   end

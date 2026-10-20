@@ -7,7 +7,11 @@ module Bankimport
   # Interne.
   module Parsers
     # Ligne lue dans un fichier. `position` : rang de la ligne (CSV, QIF) ou
-    # de l'opération (OFX) dans le fichier, à partir de 1.
+    # de l'opération (OFX) dans le fichier, à partir de 1. `payee` :
+    # bénéficiaire que le fichier nomme (OFX `NAME` ou `PAYEE`, QIF `P`,
+    # colonne « tiers » d'un CSV) ; `iban` : IBAN de la contrepartie quand le
+    # fichier le porte (OFX `BANKACCTTO`, colonne IBAN d'un CSV), sous sa
+    # forme compacte.
     record ParsedLine,
       position : Int32,
       date : Time,
@@ -16,7 +20,9 @@ module Bankimport
       extra : String = "",
       reference : String = "",
       fitid : String = "",
-      counterparty : String = ""
+      counterparty : String = "",
+      payee : String = "",
+      iban : String = ""
 
     # Anomalie d'une ligne (`position` > 0) ou du fichier (`position` = 0) :
     # clé i18n complète et paramètres, comme `Partiduo::Api::FieldError`.
@@ -46,6 +52,15 @@ module Bankimport
     # Libellé ramené à une seule ligne, sans espaces superflus, borné.
     def self.clean(text : String, max : Int32 = 255) : String
       text.gsub(/[[:cntrl:]]/, " ").gsub(/\s+/, " ").strip[0, max]
+    end
+
+    # IBAN sous sa forme compacte (majuscules, sans espaces, points ni
+    # tirets), ou chaîne vide si le texte n'en a pas la forme (deux lettres,
+    # deux chiffres, 11 à 30 caractères alphanumériques) : un numéro de
+    # compte national n'est pas un IBAN et ne doit rien proposer.
+    def self.iban(text : String) : String
+      compact = text.upcase.gsub(/[\s.\-]/, "")
+      compact.matches?(/\A[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}\z/) ? compact : ""
     end
 
     # Entités XML et SGML courantes d'un OFX.

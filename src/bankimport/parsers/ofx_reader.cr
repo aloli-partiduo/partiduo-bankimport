@@ -5,7 +5,8 @@ module Bankimport
     # Lecture d'un relevé OFX (D-BKI-002), en version 1 (SGML, balises sans
     # fermeture) comme en version 2 (XML) : opérations `STMTTRN` (date
     # `DTPOSTED`, montant `TRNAMT`, identifiant `FITID`, libellé `NAME` et
-    # `MEMO`, numéro `CHECKNUM` ou `REFNUM`), compte (`ACCTID`), devise
+    # `MEMO`, numéro `CHECKNUM` ou `REFNUM`, bénéficiaire `NAME` ou
+    # `PAYEE`, IBAN de la contrepartie `BANKACCTTO`), compte (`ACCTID`), devise
     # (`CURDEF`), solde de fin (`LEDGERBAL`). Jeu de caractères de l'en-tête
     # (`CHARSET:1252`, `encoding="…"`), sinon UTF-8 s'il est valide.
     module OfxReader
@@ -62,7 +63,16 @@ module Bankimport
         return parsed.issue(position, "line.label") if label.empty?
         reference = clean_tag(block, "CHECKNUM", 64).presence || clean_tag(block, "REFNUM", 64)
         parsed.lines << ParsedLine.new(position, date, amount, label, extra: memo == label ? "" : memo,
-          reference: reference, fitid: clean_tag(block, "FITID", 255), counterparty: clean_tag(block, "PAYEEID", 255))
+          reference: reference, fitid: clean_tag(block, "FITID", 255), counterparty: clean_tag(block, "PAYEEID", 255),
+          payee: name, iban: counterparty_iban(block))
+      end
+
+      # IBAN du compte de la contrepartie (`BANKACCTTO`, virement), s'il en a
+      # la forme ; un numéro de compte national est ignoré.
+      private def self.counterparty_iban(block : String) : String
+        to = section(block, "BANKACCTTO") || return ""
+        to = to.split(/<\/BANKACCTTO>/i).first
+        Parsers.iban(tag(to, "ACCTID"))
       end
 
       private def self.section(text : String, name : String) : String?

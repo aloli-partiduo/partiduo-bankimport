@@ -30,12 +30,15 @@ link:DECISIONS.adoc[]. Référence du contrat : link:doc/api/bankimport.adoc[].
 |Formats CSV par établissement
 |Séparateur, encodage (UTF-8, Windows-1252), lignes d'en-tête, format de
 date, séparateurs décimal et de milliers, rang des colonnes (date,
-libellé, montant signé ou débit et crédit, information, référence, tiers),
-inversion du signe. Équivalent des formats de l'application d'origine.
+libellé, montant signé ou débit et crédit, information, référence, tiers,
+IBAN de la contrepartie), inversion du signe. Équivalent des formats de l'application d'origine.
 
 |OFX et QIF
-|OFX 1 (SGML) et 2 (XML) : FITID, compte, devise, solde de fin ; QIF :
-sections de trésorerie, ordre des dates choisi. Genre reconnu au contenu.
+|OFX 1 (SGML) et 2 (XML) : FITID, compte, devise, solde de fin,
+bénéficiaire (`NAME`, `PAYEE`), IBAN de la contrepartie (`BANKACCTTO`) ;
+QIF : sections de trésorerie, bénéficiaire (`P`), ordre des dates choisi.
+Genre reconnu au contenu. Fichier conservé par le socle en
+`application/x-ofx` ou `application/qif`.
 
 |Zone d'attente
 |Aperçu avant import (lignes illisibles signalées), lignes à traiter, à
@@ -47,15 +50,19 @@ socle.
 occurrences ; fichier déjà importé refusé ; écriture semblable déjà passée
 signalée.
 
-|Tiers ou compte
-|Contrepartie par ligne (fiche ou compte), en HTMX ; règles de
-catégorisation saisies ou *apprises* des choix de l'utilisateur ; lettrage
-proposé avec la facture ouverte de même montant.
+|Tiers ou compte, bénéficiaire
+|Contrepartie et bénéficiaire par ligne (fiche ou compte), en HTMX ; règles
+de catégorisation saisies ou *apprises* des choix de l'utilisateur, qui
+posent aussi le bénéficiaire ; à défaut de règle, fiche proposée par l'IBAN
+de la contrepartie ; lettrage proposé avec la facture ouverte de même
+montant.
 
 |Transfert
 |Une écriture par ligne par `Partiduo::Api::Accounting.post_financial`,
 pièce jointe comprise ; un refus reste sur la ligne. Une écriture extournée
-rend sa ligne à traiter (`entry.cancelled`).
+rend sa ligne à traiter (`entry.cancelled`) ; elle se *rattache* ensuite à
+l'écriture qui la corrige, ou à une écriture passée à la main, sans nouvelle
+écriture (`relink`), pointage refait au besoin.
 
 |Pointage
 |Le relevé d'un import est pointé par le rapprochement de la Comptabilité
@@ -82,9 +89,9 @@ src/
 └── bankimport/                  # métier (application Marten « bankimport »)
     ├── app.cr, manifest.cr      # code BANKIMPORT, permissions, menus, abonnement
     ├── models/                  # tables bankimport_*
-    ├── migrations/              # 0001 : tables et contraintes
+    ├── migrations/              # 0001 : tables et contraintes ; 0002 : bénéficiaire, IBAN
     ├── parsers/                 # lecture CSV, OFX, QIF, montants, dates, encodages
-    ├── services/                # import, doublons, règles, transfert (interne)
+    ├── services/                # import, doublons, règles, transfert, rattachement (interne)
     ├── api/                     # contrat public Bankimport::Api
     └── locales/                 # fr, en, nl
 ui/
@@ -126,8 +133,10 @@ scripts/override-local.sh
 ----
 
 Le script génère un `shard.override.yml` *local et non versionné* (ignoré par
-git), installe les shards, puis remet `shard.lock` à son état versionné.
-Une copie de travail absente reste prise sur GitHub.
+git), installe les shards, puis remet `shard.lock` à son état versionné
+(`git checkout -- shard.lock` : il écrase un verrou modifié et non commité ;
+le sauvegarder avant par `cp` s'il doit être gardé). Une copie de travail
+absente reste prise sur GitHub.
 
 Pour régénérer le verrou versionné, supprimer d'abord l'override local :
 

@@ -106,6 +106,15 @@ nl:
         fitid_taken: "Verrichting %{fitid} staat al in dit dagboek."
       import:
         in_use: "Lijnen van deze import werden overgeboekt of afgepunt: hij blijft bewaard."
+      payee:
+        too_long: "De begunstigde mag niet langer zijn dan %{max} tekens."
+      relink:
+        entry_unknown: "Boeking %{id} bestaat niet of is niet voor u toegankelijk."
+        entry_cancelled: "Deze boeking is tegengeboekt, of is een tegenboeking: kies de boeking die haar vervangt."
+        ledger: "Deze boeking staat niet in het dagboek van de lijn."
+        amount: "Deze boeking boekt %{amount} op de bankrekening, de lijn %{expected}."
+        date: "Deze boeking is meer dan %{days} dagen van de lijn gedateerd."
+        entry_taken: "Een andere geïmporteerde lijn is al aan deze boeking gekoppeld."
       reconcile:
         already: "Het afschrift van deze import is al afgepunt."
         nothing: "Geen enkele overgeboekte lijn van deze import moet nog afgepunt worden."

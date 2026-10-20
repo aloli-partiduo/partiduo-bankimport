@@ -39,10 +39,21 @@ module Bankimport
       {done, failed}
     end
 
+    # Libellé de l'écriture (D-BKI-012) : le bénéficiaire en tête, puis le
+    # libellé du relevé, sauf s'il le contient déjà (« EDF · PRLV SEPA
+    # CLIENT 123 », mais « PRLV SEPA EDF » pour le bénéficiaire « EDF »
+    # lu dans ce libellé) ; borné à 255 caractères.
+    def self.label(row : Line) : String
+      text = row.label.to_s
+      payee = row.payee.to_s.strip
+      return text if payee.empty? || Categorizer.normalize(text).includes?(Categorizer.normalize(payee))
+      "#{payee} · #{text}"[0, 255]
+    end
+
     # Passe l'écriture d'une ligne ; rend l'erreur, ou `nil`.
     private def self.post(actor : Partiduo::Api::Actor, row : Line, attachment_id : Int64?) : Partiduo::Api::FieldError?
       line = Acc::PaymentLineInput.new(row.amount!, card: row.card_code.to_s.presence, account: row.account.to_s.presence,
-        label: row.label.to_s, match_line_ids: row.match_line_id.try { |id| [id.to_i64] } || [] of Int64)
+        label: label(row), match_line_ids: row.match_line_id.try { |id| [id.to_i64] } || [] of Int64)
       input = Acc::FinancialInput.new(ledger_id: row.ledger_id!.to_i64, date: row.date!, lines: [line],
         attachment_id: attachment_id, source: "#{SOURCE}#{row.id}")
       result = Partiduo::Api::Transaction.run do

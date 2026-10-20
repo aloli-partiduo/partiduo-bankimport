@@ -85,10 +85,10 @@ describe "Import des relevés : zone d'attente, doublons, historique (D-BKI-005,
     view.statement_on.should eq(S.date("2026-09-15"))
     view.pending_count.should eq(4)
     S.pending(view.id).count(&.label.==("CB CARREFOUR")).should eq(2)
-    Partiduo::Api::Core.attachment(S.accountant, present(view.attachment_id)).content_type.should eq("text/plain")
+    Partiduo::Api::Core.attachment(S.accountant, present(view.attachment_id)).content_type.should eq("application/x-ofx")
 
     v2 = S.import("releve-v2.ofx")
-    Partiduo::Api::Core.attachment(S.accountant, present(v2.attachment_id)).content_type.should eq("application/xml")
+    Partiduo::Api::Core.attachment(S.accountant, present(v2.attachment_id)).content_type.should eq("application/x-ofx")
 
     again = S.import("releve.ofx", allow_same_file: true)
     again.duplicate_count.should eq(4)
@@ -103,6 +103,7 @@ describe "Import des relevés : zone d'attente, doublons, historique (D-BKI-005,
       content: S.fixture("releve.qif"), date_format: "dd/mm/yyyy"))
     view = result.value!
     view.kind.should eq("qif")
+    Partiduo::Api::Core.attachment(S.accountant, present(view.attachment_id)).content_type.should eq("application/qif")
     S.pending(view.id).map(&.label).should eq(["PRLV SEPA EDF", "MENUISERIE LEROUX", "FRAIS TENUE DE COMPTE"])
   end
 

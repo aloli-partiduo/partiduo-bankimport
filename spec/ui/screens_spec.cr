@@ -201,6 +201,34 @@ describe "Écrans des relevés bancaires sous /ext/BANKIMPORT/ (ADR-011 D6, ADR-
     browser.post("/ext/BANKIMPORT/rules/new", {"label_contains" => "", "account" => ""}).status.should eq(422)
   end
 
+  it "saisit le bénéficiaire d'une ligne et d'une règle, et rattache une ligne à l'écriture qui la corrige (HTMX)" do
+    browser = signed_in
+    S.import("releve.ofx")
+    edf = S.line("PRLV SEPA EDF")
+    browser.get("/ext/BANKIMPORT/lines").html.should contain(%(id="bki-payee-#{edf.id}" name="payee" value="PRLV SEPA EDF"))
+    row = browser.htmx_post("/ext/BANKIMPORT/lines/#{edf.id}", {"card_code" => "", "account" => "627", "payee" => "EDF", "learn" => "1"})
+    row.status.should eq(200)
+    row.html.should contain("Bénéficiaire : EDF")
+    Api.rules(S.system).first.payee.should eq("EDF")
+
+    entry_id = present(Api.transfer(S.system, [edf.id]).value!.transferred.first.entry_id)
+    Partiduo::Api::Accounting.cancel_entry(S.system, Partiduo::Api::Accounting::CancelEntryInput.new(entry_id)).value!
+    browser.get("/ext/BANKIMPORT/lines").html.should contain(%(hx-post="/ext/BANKIMPORT/lines/#{edf.id}/relink"))
+    refused = browser.htmx_post("/ext/BANKIMPORT/lines/#{edf.id}/relink", {"entry_id" => entry_id.to_s})
+    refused.status.should eq(422)
+    refused.html.should contain("Cette écriture est extournée")
+    input = Partiduo::Api::Accounting::FinancialInput.new(ledger_id: S.bank.id, date: S.date("2026-09-01"),
+      lines: [Partiduo::Api::Accounting::PaymentLineInput.new(S.d("-84.20"), account: "627", label: "EDF corrigé")], source: "spec:edf")
+    corrected = Partiduo::Api::Accounting.post_financial(S.system, input).value!.first
+    done = browser.htmx_post("/ext/BANKIMPORT/lines/#{edf.id}/relink", {"entry_id" => corrected.id.to_s})
+    done.status.should eq(200)
+    done.html.should contain("Transférée")
+    Api.line(S.system, edf.id).entry_id.should eq(corrected.id)
+
+    browser.get("/ext/BANKIMPORT/rules/new").html.should contain(%(name="payee"))
+    browser.get("/ext/BANKIMPORT/formats/new").html.should contain("IBAN de la contrepartie")
+  end
+
   it "refuse les écrans de paramétrage à qui ne peut que consulter (403)" do
     PartiduoUi::Reference.provision
     PartiduoUi::Reference.fiscal_year(2026)

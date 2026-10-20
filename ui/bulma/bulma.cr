@@ -48,6 +48,7 @@ module Bankimport
       path "/lines/action", Bankimport::Ui::LinesActionHandler, name: "lines_action"
       path "/lines/<id:int>", Bankimport::Ui::LineHandler, name: "line"
       path "/lines/<id:int>/clear", Bankimport::Ui::LineClearHandler, name: "line_clear"
+      path "/lines/<id:int>/relink", Bankimport::Ui::LineRelinkHandler, name: "line_relink"
       path "/imports", Bankimport::Ui::ImportsHandler, name: "imports"
       path "/imports/<id:int>", Bankimport::Ui::ImportDetailHandler, name: "import_detail"
       path "/imports/<id:int>/file", Bankimport::Ui::ImportFileHandler, name: "import_file"
@@ -68,7 +69,7 @@ module Bankimport
     # paramétrage, suppression et purge : `bankimport.admin` ; les autres :
     # `bankimport.read`. Le contrat vérifie encore les permissions du cœur
     # (pièce jointe, écriture, rapprochement).
-    IMPORT_ROUTES = %w[import lines_action line line_clear import_reconcile]
+    IMPORT_ROUTES = %w[import lines_action line line_clear line_relink import_reconcile]
     ADMIN_ROUTES  = %w[import_delete purge formats format_new format_edit format_delete rules rule_new rule_edit
       rule_delete]
   end

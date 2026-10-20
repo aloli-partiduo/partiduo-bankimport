@@ -69,3 +69,7 @@
 .bki-inline {
   display: inline;
 }
+
+.bki-relink-form .bki-entry-id {
+  inline-size: 6rem;
+}

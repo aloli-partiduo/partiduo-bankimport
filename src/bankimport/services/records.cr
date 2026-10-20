@@ -81,7 +81,7 @@ module Bankimport
         debit_column: row.debit_column.try(&.to_i32), credit_column: row.credit_column.try(&.to_i32),
         extra_column: row.extra_column.try(&.to_i32), reference_column: row.reference_column.try(&.to_i32),
         counterparty_column: row.counterparty_column.try(&.to_i32), negate: row.negate == true,
-        import_count: Import.filter(format_id: row.id).count.to_i32,
+        import_count: Import.filter(format_id: row.id).count.to_i32, iban_column: row.iban_column.try(&.to_i32),
       )
     end
 
@@ -94,6 +94,7 @@ module Bankimport
         debit_column: row.debit_column.try(&.to_i32), credit_column: row.credit_column.try(&.to_i32),
         extra_column: row.extra_column.try(&.to_i32), reference_column: row.reference_column.try(&.to_i32),
         counterparty_column: row.counterparty_column.try(&.to_i32), negate: row.negate == true,
+        iban_column: row.iban_column.try(&.to_i32),
       )
     end
 
@@ -144,7 +145,7 @@ module Bankimport
           rule_id: row.rule_id.try(&.to_i64), match_line_id: row.match_line_id.try(&.to_i64),
           duplicate_of_id: row.duplicate_of_id.try(&.to_i64), recorded_entry_id: row.recorded_entry_id.try(&.to_i64),
           entry_id: row.entry_id.try(&.to_i64), reversed_entry_id: row.reversed_entry_id.try(&.to_i64),
-          error: stored_error(row),
+          error: stored_error(row), payee: row.payee.to_s, iban: row.iban.to_s,
         )
       end
     end
@@ -158,7 +159,7 @@ module Bankimport
         id: row.id!.to_i64, ledger_id: row.ledger_id.try(&.to_i64), label_contains: row.label_contains.to_s,
         amount: row.amount, direction: row.direction.to_s, card_code: row.card_code.to_s, account: row.account.to_s,
         position: row.position!.to_i32, active: row.active == true, learned: row.learned == true,
-        hits: row.hits!.to_i32, last_used_at: row.last_used_at,
+        hits: row.hits!.to_i32, last_used_at: row.last_used_at, payee: row.payee.to_s,
       )
     end
 

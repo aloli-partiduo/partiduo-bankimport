@@ -183,6 +183,122 @@ cocher. Tuile « Relevés à traiter » et compteur du menu par les accroches
 saisie en grille au clavier si l'usage le demande ; HTMX suffit à cette
 version.
 
+=== D-BKI-012 — Bénéficiaire des lignes et des règles (A-PER-2, 20 octobre 2026)
+
+*Contexte.* ADR-011 D6 veut des règles « alors telle catégorie et tel
+bénéficiaire » ; `partiduo-perso` faisait tenir au libellé de la ligne le
+rôle du bénéficiaire (D-PER-017). Amendement A-PER-2 adopté le 13 octobre
+2026.
+
+*Choix.*
+
+* `bankimport_line.payee` : bénéficiaire lu dans le relevé — OFX `NAME`
+  (ou le `NAME` de l'agrégat `PAYEE`), QIF `P`, colonne « tiers » d'un
+  format CSV (la colonne existante, sans nouveau réglage) — ou posé par la
+  première règle qui s'applique si elle en donne un, ou choisi par
+  l'utilisateur avec la contrepartie (`CounterpartInput#payee`, appris avec
+  la règle s'il change). `bankimport_rule.payee` : 120 caractères, vide =
+  le bénéficiaire du relevé est gardé. « Le libellé contient » cherche
+  aussi dans le bénéficiaire.
+* *Écriture transférée : dans le libellé.* Le contrat de la Comptabilité n'a
+  pas de champ « bénéficiaire » : la fiche (`card`) est le tiers comptable,
+  qu'un foyer ne crée pas pour chaque commerçant, et la référence de
+  l'émetteur (`external_reference`, A-IMP-2) désigne une pièce, pas une
+  personne. Le libellé de l'écriture devient « bénéficiaire · libellé du
+  relevé », ou reste le libellé du relevé s'il contient déjà le
+  bénéficiaire (sans casse ni accents) : le comptable lit qui a été payé,
+  le pointage garde le texte de la banque. Le bénéficiaire exact reste sur
+  la ligne : `lines_by_entry(actor, entry_ids)` le rend à qui présente les
+  écritures (`partiduo-perso`), sans relire le libellé.
+* Champs ajoutés en dernier aux records (`LineView`, `PreviewLineView`,
+  `RuleView`, `RuleInput`, `CounterpartInput`), avec des défauts qui gardent
+  le comportement antérieur.
+
+*Compatibilité des données.* Migration 0002 : colonnes ajoutées avec `''`
+par défaut ; reprise des lignes existantes — le tiers lu (`counterparty`)
+d'un CSV ou d'un QIF, le libellé d'un OFX (sa balise `NAME`, que le lecteur
+prenait déjà pour libellé). Les règles existantes n'ont pas de
+bénéficiaire. Les écritures déjà transférées gardent leur libellé.
+
+*Alternative écartée.* Un champ « bénéficiaire » dans les écritures du
+cœur : amendement du cœur non demandé, et inutile tant que la ligne le
+garde.
+
+=== D-BKI-013 — Fiche proposée par l'IBAN de la contrepartie (A-BKI-2, 20 octobre 2026)
+
+*Contexte.* Le tiers n'était proposé que par les règles, faute de
+recherche par IBAN dans le contrat des fiches ; `CardQuery#iban` est livré
+(D-AMD-007 du cœur). Contournement retiré.
+
+*Choix.* L'IBAN de la contrepartie est lu quand le relevé le porte : OFX
+`BANKACCTTO`/`ACCTID` d'un virement, nouvelle colonne `iban_column` d'un
+format CSV ; gardé sous forme compacte, et seulement s'il a la forme d'un
+IBAN (un numéro de compte national ne propose rien). Le QIF n'en porte pas.
+À l'import et par « Appliquer les règles », une ligne qu'aucune règle ne
+catégorise reçoit la fiche active qui porte cet IBAN, si elle est seule et
+que l'acteur lit les fiches (`cards.card.read`) ; sans règle (`rule_id`
+vide), le lettrage proposé suit comme pour une fiche choisie.
+
+*Pourquoi la règle passe avant l'IBAN.* Une règle est une décision de
+l'utilisateur (un foyer range un virement dans une catégorie, un compte,
+pas sur une fiche) ; l'IBAN ne fait que retrouver une fiche.
+
+*Compatibilité.* `bankimport_csv_format.iban_column` nul pour les formats
+existants (migration 0002, rang contrôlé en base) ; `bankimport_line.iban`
+vide pour les lignes déjà importées.
+
+=== D-BKI-014 — Relevés OFX et QIF conservés sous leur type (A-BKI-1, 20 octobre 2026)
+
+*Contexte.* Contournement de D-BKI-003 : le socle n'admettait ni OFX ni
+QIF ; il admet `application/x-ofx` et `application/qif` depuis D-AMD-001.
+
+*Choix.* Un OFX (1 ou 2) est conservé en `application/x-ofx`, un QIF en
+`application/qif`, un CSV toujours en `text/csv`. Le contournement retiré
+(`text/plain`, `application/xml` selon l'en-tête) n'est plus écrit.
+
+*Compatibilité.* Les pièces déjà conservées gardent leur type : le
+téléchargement et `import_content` rendent le type enregistré, le contenu
+est relu à l'identique (spec). Aucune migration : on ne réécrit pas les
+pièces du socle.
+
+=== D-BKI-015 — Ligne rattachée à l'écriture qui corrige la sienne (A-PER-3, 20 octobre 2026)
+
+*Contexte.* Corriger une écriture transférée l'extourne ; l'abonné rend la
+ligne à traiter (D-BKI-009) et un nouveau transfert ferait un doublon.
+`partiduo-perso` écartait donc la ligne (D-PER-008). Amendement A-PER-3
+adopté.
+
+*Choix.* `Bankimport::Api.relink(actor, line_id, entry_id)` rattache une
+ligne à traiter à une écriture déjà passée, sans en passer une : la ligne
+redevient `transferred` (`entry_id`, auteur et date du rattachement), garde
+la trace de l'écriture extournée (`reversed_entry_id`). Contrôles : ligne à
+traiter ; écriture lisible par l'acteur, ni extournée ni extourne, du même
+journal, dont le mouvement sur le compte de banque du journal vaut le
+montant de la ligne, datée à 31 jours au plus de la ligne (une correction
+garde en général la date ; une saisie à la main peut dater du paiement
+plutôt que du débit), qu'aucune autre ligne ne cite. La même commande
+rattache une ligne à l'écriture passée à la main qu'elle signale
+(`recorded_entry_id`, D-BKI-005) : c'est le même geste.
+
+*Pointage.* Si l'écriture extournée figurait au relevé pointé de l'import,
+le contrat du rapprochement n'ayant pas de commande « ajouter au relevé »,
+le relevé est défait (`unreconcile`) puis repointé (`reconcile`) avec la
+même référence, les mêmes soldes et le même fichier, ses écritures plus
+l'extourne et la nouvelle écriture : le total ne change pas (montants
+égaux), le relevé change d'identifiant (repris sur l'import). Un refus du
+rapprochement annule tout le rattachement.
+
+*Interface.* Sur une ligne à traiter qui signale une écriture ou dont
+l'écriture a été extournée, un champ « Écriture n° » (prérempli de
+l'écriture signalée) et « Rattacher », en HTMX.
+
+*Compatibilité.* Aucune donnée changée ; l'abonné `entry.cancelled`
+s'applique de même à une ligne rattachée.
+
+*Manque du cœur (signalé, contourné).* Une commande « ajouter une écriture
+à un relevé existant » éviterait de défaire et refaire le relevé (et d'en
+changer l'identifiant).
+
 == Amendements proposés au contrat du cœur
 
 À soumettre à l'utilisateur ; l'extension les contourne sans modifier
@@ -193,11 +309,19 @@ A-BKI-1 — Types MIME des relevés admis en pièce jointe (socle, `Core::Attach
   (`.qif`), contrôlés comme du texte (aucun octet nul). Aujourd'hui un OFX
   1 ou un QIF est conservé en `text/plain`, et son extension d'origine ne
   survit que dans le nom de fichier. Contournement en place (D-BKI-003).
+  *Adopté le 13 octobre 2026 (D-AMD-001 du cœur). Réalisé le 20 octobre
+  2026 : contournement retiré, D-BKI-014.*
 
 A-BKI-2 — Recherche d'une fiche par IBAN (`Partiduo::Api::Cards.CardQuery`)::
   Un critère `iban` (normalisé, sans espaces) permettrait de proposer le
   tiers d'une ligne à partir de l'IBAN de la contrepartie que donnent
   beaucoup de relevés CSV et certains OFX. Aujourd'hui, seules les règles
   sur le libellé le font. Contournement : règles apprises.
+  *Adopté le 13 octobre 2026 (D-AMD-007 du cœur). Réalisé le 20 octobre
+  2026 : fiche proposée par l'IBAN lu, D-BKI-013.*
+
+Amendements demandés à cette extension par `partiduo-perso` (A-PER-2,
+A-PER-3), adoptés le 13 octobre 2026 : *réalisés le 20 octobre 2026*
+(D-BKI-012, D-BKI-015).
 
 Aucun nouvel événement n'est demandé à ADR-003 D7.

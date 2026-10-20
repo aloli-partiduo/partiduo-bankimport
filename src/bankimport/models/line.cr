@@ -16,7 +16,10 @@ module Bankimport
   #   montant, déjà en comptabilité (signalée, pas écartée) ;
   # * `fingerprint` : date, montant et libellé normalisé (doublons) ;
   # * `error_key`, `error_params` : refus du dernier transfert, à corriger ;
-  # * `reversed_entry_id` : écriture transférée puis extournée (D-BKI-009).
+  # * `reversed_entry_id` : écriture transférée puis extournée (D-BKI-009) ;
+  # * `payee` : bénéficiaire, lu dans le fichier ou posé par une règle
+  #   (A-PER-2) ; `iban` : IBAN de la contrepartie lu dans le fichier
+  #   (forme compacte), qui propose la fiche de cet IBAN.
   #
   # Interne.
   class Line < Marten::Model
@@ -45,6 +48,8 @@ module Bankimport
     field :error_params, :text, blank: true, default: ""
     field :transferred_by_id, :big_int, blank: true, null: true
     field :transferred_at, :date_time, blank: true, null: true
+    field :payee, :string, max_size: 255, blank: true, default: ""
+    field :iban, :string, max_size: 34, blank: true, default: ""
 
     with_timestamp_fields
   end

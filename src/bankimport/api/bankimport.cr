@@ -135,7 +135,7 @@ module Bankimport
 
       Transaction.run do
         stored = Partiduo::Api::Core.store_attachment(actor, Partiduo::Api::Core::AttachmentInput.new(
-          input.filename.strip, Importer.content_type(kind, input.content), IO::Memory.new(input.content)))
+          input.filename.strip, Importer.content_type(kind), IO::Memory.new(input.content)))
         next Result(ImportView).failure(stored.errors) if stored.failure?
         row = Importer.record!(actor, input, kind, parsed, format, stored.value!.id)
         Result(ImportView).success(import_view(actor, row, ledger))
@@ -204,14 +204,16 @@ module Bankimport
       Records.line_view(actor, Records.line!(actor, id))
     end
 
-    # Choisit la contrepartie d'une ligne à traiter (fiche *ou* compte) ;
-    # `learn` : en tire une règle (D-BKI-006). Un lettrage proposé est
-    # repris s'il est donné, sinon proposé quand une seule écriture ouverte
-    # de la fiche a le montant de la ligne.
+    # Choisit la contrepartie d'une ligne à traiter (fiche *ou* compte) et,
+    # s'il est donné, son bénéficiaire (A-PER-2) ; `learn` : en tire une
+    # règle (D-BKI-006), avec le bénéficiaire s'il a changé. Un lettrage
+    # proposé est repris s'il est donné, sinon proposé quand une seule
+    # écriture ouverte de la fiche a le montant de la ligne.
     def self.set_counterpart(actor : Actor, id : Int64, input : CounterpartInput) : Result(LineView)
       authorize!(actor, IMPORT)
       errors = [] of FieldError
       Checks.counterpart_errors(actor, input.card_code, input.account, errors)
+      Checks.payee_errors(input.payee, errors)
       return Result(LineView).failure(errors) unless errors.empty?
       Transaction.run do
         row = Records.line!(actor, id, lock: true)
@@ -220,6 +222,10 @@ module Bankimport
         row.account = input.account.strip
         row.rule_id = nil
         row.match_line_id = nil
+        changed_payee = input.payee.try { |text| Parsers.clean(text, Checks::MAX_PAYEE) }.try do |payee|
+          payee == row.payee.to_s ? nil : payee
+        end
+        changed_payee.try { |payee| row.payee = payee }
         Records.store_error(row, nil)
         if match = input.match_line_id
           unless Categorizer.open_items(actor, row).any?(&.line_id.==(match))
@@ -229,7 +235,7 @@ module Bankimport
         end
         row.save!
         Importer.suggest_matches(actor, [row]) if input.match_line_id.nil?
-        Categorizer.learn(actor, row) if input.learn
+        Categorizer.learn(actor, row, changed_payee) if input.learn
         Result(LineView).success(Records.line_view(actor, row))
       end
     end
@@ -293,7 +299,7 @@ module Bankimport
         rows = Line.filter(ledger_id__in: Records.visible_ledger_ids(actor), status: "pending")
         rows = rows.filter(id__in: ids) if ids
         list = rows.order(:date, :id).to_a
-        count = Categorizer.apply(list)
+        count = Categorizer.apply(actor, list)
         Importer.suggest_matches(actor, list)
         Result(Int32).success(count)
       end
@@ -311,6 +317,50 @@ module Bankimport
       rows = Line.filter(id__in: ids.uniq, ledger_id__in: Records.visible_ledger_ids(actor)).order(:date, :id).to_a
       done, failed = Transfer.run(actor, rows)
       Result(TransferReportView).success(TransferReportView.new(Records.line_views(actor, done), Records.line_views(actor, failed)))
+    end
+
+    # Rattache une ligne à traiter à une écriture déjà passée dans son
+    # journal (A-PER-3, D-BKI-015) : celle qui corrige l'écriture transférée
+    # puis extournée de la ligne (`reversed_entry_id`, D-BKI-009), ou celle
+    # passée hors de l'extension qu'elle signale (`recorded_entry_id`). La
+    # ligne redevient transférée, rattachée à cette écriture, sans nouvelle
+    # écriture ; si l'écriture extournée était pointée dans le relevé de
+    # l'import, le relevé est refait avec l'extourne et la nouvelle
+    # écriture (même référence, mêmes soldes, même fichier).
+    #
+    # Contrôles : ligne à traiter ; écriture lisible par l'acteur, non
+    # extournée et qui n'est pas une extourne, du même journal, dont le
+    # mouvement sur le compte de banque vaut le montant de la ligne, datée
+    # à `RELINK_DAYS` jours au plus de la ligne, qu'aucune autre ligne ne
+    # cite. Exige aussi `accounting.entry.read`, et
+    # `accounting.matching.write` quand le relevé est refait.
+    #
+    # Erreurs : `bankimport.errors.line.not_pending`,
+    # `.relink.entry_unknown|entry_cancelled|ledger|amount|date|entry_taken`
+    # (champ `entry_id`) ; celles du rapprochement.
+    def self.relink(actor : Actor, line_id : Int64, entry_id : Int64) : Result(LineView)
+      authorize!(actor, IMPORT)
+      Transaction.run do
+        row = Records.line!(actor, line_id, lock: true)
+        next Result(LineView).failure(Records.error(FieldError::BASE, "line.not_pending")) unless row.status == "pending"
+        entry, errors = Relink.check(actor, row, entry_id)
+        next Result(LineView).failure(errors) unless errors.empty? && entry
+        repointed = Relink.repoint(actor, row, entry)
+        next Result(LineView).failure(repointed) unless repointed.empty?
+        Relink.apply(actor, row, entry)
+        Result(LineView).success(Records.line_view(actor, row))
+      end
+    end
+
+    # Lignes transférées vers ces écritures, dans les journaux visibles de
+    # l'acteur, par écriture : une extension qui présente les écritures
+    # (`partiduo-perso`) y lit le bénéficiaire de la ligne (A-PER-2).
+    def self.lines_by_entry(actor : Actor, entry_ids : Array(Int64)) : Hash(Int64, LineView)
+      authorize!(actor, READ)
+      return {} of Int64 => LineView if entry_ids.empty?
+      rows = Line.filter(entry_id__in: entry_ids.uniq, status: "transferred",
+        ledger_id__in: Records.visible_ledger_ids(actor)).to_a
+      Records.line_views(actor, rows).to_h { |view| {view.entry_id || 0_i64, view} }
     end
 
     # --- Pointage ---------------------------------------------------------------------
@@ -436,7 +486,8 @@ module Bankimport
       rows = rows.filter(card_code: "", account: "") if query.unassigned_only
       if text = query.search.try(&.strip).presence
         rows = rows.filter do
-          q(label__icontains: text) | q(extra__icontains: text) | q(counterparty__icontains: text) | q(reference__icontains: text)
+          q(label__icontains: text) | q(extra__icontains: text) | q(counterparty__icontains: text) |
+            q(payee__icontains: text) | q(reference__icontains: text)
         end
       end
       rows
