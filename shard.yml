@@ -1,5 +1,5 @@
 name: partiduo-bankimport
-version: 0.1.6
+version: 0.1.7
 
 description: |
   Extension d'import des relevés bancaires de Partiduo (ADR-011 D6) :

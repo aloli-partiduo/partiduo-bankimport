@@ -333,7 +333,7 @@ module Bankimport
     # mouvement sur le compte de banque vaut le montant de la ligne, datée
     # à `RELINK_DAYS` jours au plus de la ligne, qu'aucune autre ligne ne
     # cite. Exige aussi `accounting.entry.read`, et
-    # `accounting.matching.write` quand le relevé est refait.
+    # `accounting.matching.write` quand le relevé est complété.
     #
     # Erreurs : `bankimport.errors.line.not_pending`,
     # `.relink.entry_unknown|entry_cancelled|ledger|amount|date|entry_taken`

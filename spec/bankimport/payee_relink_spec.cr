@@ -194,7 +194,7 @@ describe "Ligne rattachée à l'écriture qui corrige la sienne (A-PER-3, D-BKI-
     expect_raises(Partiduo::Api::Forbidden) { Api.relink(S.reader, line.id, good.id) }
   end
 
-  it "refait le relevé pointé de l'import avec l'extourne et la nouvelle écriture" do
+  it "complète le relevé pointé de l'import avec l'extourne et la nouvelle écriture, sans le refaire" do
     S.setup
     view = S.import("releve.ofx")
     lines = S.pending(view.id)
@@ -210,7 +210,8 @@ describe "Ligne rattachée à l'écriture qui corrige la sienne (A-PER-3, D-BKI-
 
     detail = Api.import_detail(S.reader, view.id)
     detail.statement_reference.should eq("RELEVE-09")
-    detail.statement_id.should_not eq(reconciled.statement_id)
+    # Même relevé (contrat 0.18.0, `add_to_statement`) : identifiant gardé.
+    detail.statement_id.should eq(reconciled.statement_id)
     statement = Acc.bank_statement(S.accountant, present(detail.statement_id))
     statement.statement.attachment_id.should eq(view.attachment_id)
     {statement.statement.start_balance, statement.statement.end_balance}.should eq({S.d("1057.40") - total, S.d("1057.40")})

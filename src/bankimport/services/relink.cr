@@ -51,10 +51,11 @@ module Bankimport
       lines.sum(BigDecimal.new(0)) { |line| line.debit - line.credit }
     end
 
-    # Refait le relevé pointé de l'import quand l'écriture extournée de la
-    # ligne y figure : le relevé est défait, puis repointé avec ses
-    # écritures, l'extourne et la nouvelle écriture (le total ne change pas,
-    # les montants étant égaux). Rend les erreurs du rapprochement.
+    # Complète le relevé pointé de l'import quand l'écriture extournée de la
+    # ligne y figure : l'extourne et la nouvelle écriture y sont ajoutées
+    # (`Accounting.add_to_statement`, contrat 0.18.0), sans défaire le
+    # relevé, qui garde son identifiant ; son total ne change pas, les
+    # montants étant égaux. Rend les erreurs du rapprochement.
     def self.repoint(actor : Partiduo::Api::Actor, row : Line, entry : Acc::EntryView) : Array(FieldError)
       reversed_id = row.reversed_entry_id.try(&.to_i64) || return [] of FieldError
       import = Import.filter(id: row.import_id).first || return [] of FieldError
@@ -66,18 +67,9 @@ module Bankimport
       end
       ids = detail.lines.map(&.entry_id)
       return [] of FieldError unless ids.includes?(reversed_id)
-      reversal_id = Acc.entry(actor, reversed_id).reversed_by_id
-      ids << reversal_id if reversal_id
-      ids << entry.id
-      statement = detail.statement
-      undone = Acc.unreconcile(actor, statement_id)
-      return undone.errors if undone.failure?
-      redone = Acc.reconcile(actor, Acc::ReconcileInput.new(ledger_id: statement.ledger_id, reference: statement.reference,
-        entry_ids: ids, start_balance: statement.start_balance, end_balance: statement.end_balance,
-        attachment_id: statement.attachment_id))
-      return redone.errors if redone.failure?
-      Import.filter(statement_id: statement_id).update(statement_id: redone.value!.id)
-      [] of FieldError
+      added = [entry.id]
+      Acc.entry(actor, reversed_id).reversed_by_id.try { |reversal| added.unshift(reversal) unless ids.includes?(reversal) }
+      Acc.add_to_statement(actor, statement_id, added).errors
     end
 
     # La ligne devient transférée, rattachée à l'écriture.

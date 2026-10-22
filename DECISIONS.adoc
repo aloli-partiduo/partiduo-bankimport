@@ -298,6 +298,29 @@ s'applique de même à une ligne rattachée.
 *Manque du cœur (signalé, contourné).* Une commande « ajouter une écriture
 à un relevé existant » éviterait de défaire et refaire le relevé (et d'en
 changer l'identifiant).
+*Levé le 22 octobre 2026* par `Accounting.add_to_statement` (D-BKI-016).
+
+=== D-BKI-016 — Relevé pointé complété, non refait (22 octobre 2026)
+
+*Contexte.* Le cœur 0.18.0 (`API_VERSION`, D-AMD-037) ajoute
+`Accounting.add_to_statement(actor, statement_id, entry_ids)` : des
+écritures du journal, non rapprochées, rejoignent un relevé rapproché sans
+le défaire.
+
+*Choix.* Le rattachement (`Relink.repoint`) ajoute l'extourne et la
+nouvelle écriture au relevé pointé de l'import quand l'écriture extournée y
+figure, au lieu de défaire puis repointer le relevé. Le relevé garde son
+identifiant, son numéro, ses soldes et sa pièce ; l'import n'a plus à
+reprendre l'identifiant (`Import#statement_id` inchangé). Le total ne
+change pas (extourne et correction de montants égaux) ; le cœur le
+recontrôle contre l'écart des soldes. Droits inchangés
+(`accounting.matching.write`). Un refus du cœur annule tout le
+rattachement, comme avant.
+
+*Compatibilité.* Les relevés déjà refaits par la version précédente
+gardent leur nouvel identifiant, repris sur l'import ; rien à migrer.
+Contournement retiré.
+
 
 == Amendements proposés au contrat du cœur
 
