@@ -125,7 +125,7 @@ module Bankimport
                   "direction" => line.amount > 0 ? "in" : "out", "label" => line.label, "extra" => line.extra.presence,
                   "reference" => line.reference.presence, "duplicate" => Ui.flag(line.duplicate)})
         end
-        page_values["truncated"] = preview.lines.size > PREVIEW_ROWS ? I18n.t("bankimport_ui.import.truncated", count: PREVIEW_ROWS) : nil
+        page_values["truncated"] = preview.lines.size > PREVIEW_ROWS ? I18n.t("bankimport_ui.import.truncated", {"count" => PREVIEW_ROWS.to_s}) : nil
         page_values["importable"] = preview.new_count > 0 ? I18n.t("bankimport_ui.import.submit", count: preview.new_count) : nil
         page("bankimport/import.html", page_values, status: error ? 422 : 200)
       end

@@ -25,7 +25,7 @@ module Bankimport
           "actions"   => header_actions,
           "rows"      => views.map { |view| Present.line(view, fmt, can_import?) },
           "summary"   => I18n.t("bankimport_ui.lines.summary", count: total),
-          "truncated" => total > views.size ? I18n.t("bankimport_ui.lines.truncated", count: views.size) : nil,
+          "truncated" => total > views.size ? I18n.t("bankimport_ui.lines.truncated", {"count" => views.size.to_s}) : nil,
           "ledgers"   => choice_rows(ledger_options(blank: true), query("ledger")),
           "statuses"  => choice_rows([option("all", I18n.t("bankimport_ui.lines.all_statuses"))] +
                                     code_options(STATUSES, "bankimport.statuses"), status),
