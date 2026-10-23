@@ -1,0 +1,120 @@
+pt:
+  bankimport:
+    module:
+      name: "Importação de extratos bancários"
+    permissions:
+      read: "Consultar os extratos importados e a área de espera"
+      import: "Importar extratos, escolher as contrapartidas, transferir e reconciliar"
+      admin: "Configurar os formatos CSV e as regras, eliminar uma importação, purgar as linhas descartadas"
+    menu:
+      bankimport: "Extratos bancários"
+      bankimport_import: "Importar um extrato"
+      bankimport_lines: "Linhas a tratar"
+      bankimport_history: "Histórico das importações"
+      bankimport_formats: "Formatos de extrato CSV"
+      bankimport_rules: "Regras de categorização"
+    kinds:
+      csv: "CSV"
+      ofx: "OFX"
+      qif: "QIF"
+    statuses:
+      pending: "A tratar"
+      transferred: "Transferida"
+      duplicate: "Duplicado"
+      discarded: "Descartada"
+    directions:
+      any: "Entrada ou saída"
+      in: "Entrada"
+      out: "Saída"
+    separators:
+      comma: "Vírgula (,)"
+      semicolon: "Ponto e vírgula (;)"
+      tab: "Tabulação"
+      pipe: "Barra vertical (|)"
+    encodings:
+      utf-8: "UTF-8"
+      windows-1252: "Windows-1252 (Latin-1)"
+    decimal_separators:
+      comma: "Vírgula (1234,56)"
+      dot: "Ponto (1234.56)"
+    thousands_separators:
+      none: "Nenhum"
+      space: "Espaço (1 234)"
+      dot: "Ponto (1.234)"
+      comma: "Vírgula (1,234)"
+      apostrophe: "Apóstrofo (1'234)"
+    errors:
+      choice:
+        invalid: "Valor não admitido: %{value}."
+      ledger:
+        blank: "Escolha um diário financeiro."
+        invalid: "Este diário não é um diário financeiro acessível a este utilizador."
+      format:
+        blank: "Escolha o formato CSV da instituição."
+        unknown: "Este formato CSV já não existe."
+        name:
+          blank: "Atribua um nome ao formato."
+          too_long: "O nome não deve exceder %{max} caracteres."
+          taken: "Já existe um formato com este nome."
+        institution:
+          too_long: "A instituição não deve exceder %{max} caracteres."
+        thousands_separator:
+          same: "O separador de milhares deve ser diferente do separador decimal."
+        skip_lines:
+          range: "O número de linhas de cabeçalho vai de 0 a 50."
+        column:
+          range: "Uma posição de coluna vai de 1 a %{max}."
+          repeated: "Uma mesma coluna está atribuída duas vezes."
+        amount_column:
+          blank: "Indique a coluna do montante, ou as do débito e do crédito."
+          both: "Indique a coluna do montante ou as do débito e do crédito, não ambas."
+      rule:
+        condition:
+          blank: "Indique pelo menos uma condição: um texto da descrição ou um montante."
+        label_contains:
+          too_long: "O texto não deve exceder %{max} caracteres."
+        amount:
+          positive: "O montante de uma regra é positivo (o sentido escolhe-se à parte)."
+        position:
+          range: "A ordem vai de 0 a 999."
+      counterpart:
+        blank: "Escolha uma ficha ou uma conta."
+        both: "Escolha uma ficha ou uma conta, não ambas."
+        card_unknown: "Nenhuma ficha tem o código %{code}."
+        account_unknown: "A conta %{number} não existe."
+        account_not_direct: "A conta %{number} não pode ser utilizada em lançamentos."
+      file:
+        blank: "Escolha um ficheiro ou cole o seu conteúdo."
+        too_large: "O ficheiro excede %{max} MiB."
+        binary: "Este ficheiro não é um extrato em texto (CSV, OFX ou QIF)."
+        too_many_lines: "O ficheiro tem mais de %{max} linhas: divida-o."
+        already_imported: "Este ficheiro já foi importado neste diário em %{date}. Selecione «Importar mesmo assim» para o retomar."
+        malformed_csv: "O ficheiro CSV está mal formado: %{detail}."
+        empty: "Nenhuma operação foi lida neste ficheiro."
+        not_ofx: "Este ficheiro não é um extrato OFX."
+        not_qif: "Este ficheiro não é um extrato QIF."
+        filename:
+          blank: "O ficheiro deve ter um nome."
+      line:
+        date: "Linha %{line}: data ilegível (%{value})."
+        amount: "Linha %{line}: montante ilegível (%{value})."
+        zero: "Linha %{line}: montante nulo, linha ignorada."
+        label: "Linha %{line}: descrição vazia."
+        not_pending: "Esta linha já não está por tratar."
+        match_invalid: "Este lançamento não é um lançamento em aberto da ficha com o montante da linha."
+        none_selected: "Selecione pelo menos uma linha."
+        fitid_taken: "A operação %{fitid} já existe neste diário."
+      import:
+        in_use: "Há linhas desta importação transferidas ou reconciliadas: a importação é conservada."
+      payee:
+        too_long: "O beneficiário não deve exceder %{max} caracteres."
+      relink:
+        entry_unknown: "O lançamento %{id} não existe ou não está acessível."
+        entry_cancelled: "Este lançamento está estornado, ou é um estorno: escolha o lançamento que o substitui."
+        ledger: "Este lançamento não está no diário da linha."
+        amount: "Este lançamento tem %{amount} na conta bancária, a linha %{expected}."
+        date: "Este lançamento está datado a mais de %{days} dias da linha."
+        entry_taken: "Outra linha importada já está associada a este lançamento."
+      reconcile:
+        already: "O extrato desta importação já está reconciliado."
+        nothing: "Nenhuma linha transferida desta importação está por reconciliar."

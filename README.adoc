@@ -93,7 +93,7 @@ src/
     ├── parsers/                 # lecture CSV, OFX, QIF, montants, dates, encodages
     ├── services/                # import, doublons, règles, transfert, rattachement (interne)
     ├── api/                     # contrat public Bankimport::Api
-    └── locales/                 # fr, en, nl
+    └── locales/                 # fr, en, nl, de, es, it, pt
 ui/
 └── bulma/                       # interface pour partiduo-ui-bulma (application « bankimport_ui »)
     ├── bulma.cr                 # routes sous /ext/BANKIMPORT/, compteur du menu

@@ -33,7 +33,7 @@ describe "Extension BANKIMPORT : manifeste et activation (ADR-003 D2, ADR-011 D6
     Partiduo::Modules.dependency_errors(manifest, Set{Bankimport::CODE}).should eq(["BANKIMPORT requiert ACCOUNTING, inactif"])
   end
 
-  it "traduit son nom, ses permissions et ses menus en fr, en et nl" do
+  it "traduit son nom, ses permissions et ses menus dans chaque langue livrée" do
     manifest = Partiduo::Modules[Bankimport::CODE]
     keys = [manifest.name] + manifest.permission_entries.map(&.label) + manifest.menus.map(&.label)
     Partiduo::LOCALES.each do |locale|

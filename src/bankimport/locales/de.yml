@@ -1,0 +1,120 @@
+de:
+  bankimport:
+    module:
+      name: "Import von Kontoauszügen"
+    permissions:
+      read: "Importierte Kontoauszüge und die Warteschlange einsehen"
+      import: "Kontoauszüge importieren, Gegenkonten wählen, übertragen und abgleichen"
+      admin: "CSV-Formate und Regeln einrichten, einen Import löschen, verworfene Zeilen bereinigen"
+    menu:
+      bankimport: "Kontoauszüge"
+      bankimport_import: "Auszug importieren"
+      bankimport_lines: "Zu bearbeitende Zeilen"
+      bankimport_history: "Importverlauf"
+      bankimport_formats: "CSV-Auszugsformate"
+      bankimport_rules: "Kategorisierungsregeln"
+    kinds:
+      csv: "CSV"
+      ofx: "OFX"
+      qif: "QIF"
+    statuses:
+      pending: "Zu bearbeiten"
+      transferred: "Übertragen"
+      duplicate: "Duplikat"
+      discarded: "Verworfen"
+    directions:
+      any: "Eingang oder Ausgang"
+      in: "Eingang"
+      out: "Ausgang"
+    separators:
+      comma: "Komma (,)"
+      semicolon: "Semikolon (;)"
+      tab: "Tabulator"
+      pipe: "Senkrechter Strich (|)"
+    encodings:
+      utf-8: "UTF-8"
+      windows-1252: "Windows-1252 (Latin-1)"
+    decimal_separators:
+      comma: "Komma (1234,56)"
+      dot: "Punkt (1234.56)"
+    thousands_separators:
+      none: "Keines"
+      space: "Leerzeichen (1 234)"
+      dot: "Punkt (1.234)"
+      comma: "Komma (1,234)"
+      apostrophe: "Apostroph (1'234)"
+    errors:
+      choice:
+        invalid: "Unzulässiger Wert: %{value}."
+      ledger:
+        blank: "Wählen Sie ein Finanzjournal."
+        invalid: "Dieses Journal ist kein für Sie freigegebenes Finanzjournal."
+      format:
+        blank: "Wählen Sie das CSV-Format des Kreditinstituts."
+        unknown: "Dieses CSV-Format existiert nicht mehr."
+        name:
+          blank: "Geben Sie dem Format einen Namen."
+          too_long: "Der Name darf höchstens %{max} Zeichen lang sein."
+          taken: "Ein Format mit diesem Namen existiert bereits."
+        institution:
+          too_long: "Das Kreditinstitut darf höchstens %{max} Zeichen lang sein."
+        thousands_separator:
+          same: "Das Tausendertrennzeichen muss sich vom Dezimaltrennzeichen unterscheiden."
+        skip_lines:
+          range: "Die Anzahl der Kopfzeilen liegt zwischen 0 und 50."
+        column:
+          range: "Eine Spaltenposition liegt zwischen 1 und %{max}."
+          repeated: "Dieselbe Spalte ist zweimal zugeordnet."
+        amount_column:
+          blank: "Geben Sie die Spalte für den Betrag oder die für Soll und Haben an."
+          both: "Geben Sie entweder die Spalte für den Betrag oder die für Soll und Haben an."
+      rule:
+        condition:
+          blank: "Geben Sie mindestens eine Bedingung an: einen Text im Buchungstext oder einen Betrag."
+        label_contains:
+          too_long: "Der Text darf höchstens %{max} Zeichen lang sein."
+        amount:
+          positive: "Der Betrag einer Regel ist positiv (die Richtung wird separat gewählt)."
+        position:
+          range: "Die Reihenfolge liegt zwischen 0 und 999."
+      counterpart:
+        blank: "Wählen Sie einen Stammsatz oder ein Konto."
+        both: "Wählen Sie einen Stammsatz oder ein Konto, nicht beides."
+        card_unknown: "Kein Stammsatz hat den Code %{code}."
+        account_unknown: "Das Konto %{number} existiert nicht."
+        account_not_direct: "Das Konto %{number} kann nicht bebucht werden."
+      file:
+        blank: "Wählen Sie eine Datei oder fügen Sie ihren Inhalt ein."
+        too_large: "Die Datei überschreitet %{max} MiB."
+        binary: "Diese Datei ist kein Textauszug (CSV, OFX oder QIF)."
+        too_many_lines: "Die Datei hat mehr als %{max} Zeilen: Teilen Sie sie auf."
+        already_imported: "Diese Datei wurde am %{date} bereits in dieses Journal importiert. Markieren Sie „Trotzdem importieren“, um sie erneut zu übernehmen."
+        malformed_csv: "Die CSV-Datei ist fehlerhaft: %{detail}."
+        empty: "In dieser Datei wurde keine Buchung gelesen."
+        not_ofx: "Diese Datei ist kein OFX-Auszug."
+        not_qif: "Diese Datei ist kein QIF-Auszug."
+        filename:
+          blank: "Die Datei muss einen Namen haben."
+      line:
+        date: "Zeile %{line}: Datum nicht lesbar (%{value})."
+        amount: "Zeile %{line}: Betrag nicht lesbar (%{value})."
+        zero: "Zeile %{line}: Betrag ist null, Zeile ignoriert."
+        label: "Zeile %{line}: Buchungstext leer."
+        not_pending: "Diese Zeile ist nicht mehr zu bearbeiten."
+        match_invalid: "Diese Buchung ist keine offene Buchung des Stammsatzes über den Betrag der Zeile."
+        none_selected: "Markieren Sie mindestens eine Zeile."
+        fitid_taken: "Die Buchung %{fitid} ist in diesem Journal bereits vorhanden."
+      import:
+        in_use: "Zeilen dieses Imports wurden übertragen oder abgeglichen: Er wird beibehalten."
+      payee:
+        too_long: "Der Empfänger darf höchstens %{max} Zeichen lang sein."
+      relink:
+        entry_unknown: "Die Buchung %{id} existiert nicht oder ist für Sie nicht freigegeben."
+        entry_cancelled: "Diese Buchung ist storniert oder selbst ein Storno: Wählen Sie die Buchung, die sie ersetzt."
+        ledger: "Diese Buchung befindet sich nicht im Journal der Zeile."
+        amount: "Diese Buchung weist %{amount} auf dem Bankkonto aus, die Zeile %{expected}."
+        date: "Diese Buchung ist mehr als %{days} Tage von der Zeile entfernt datiert."
+        entry_taken: "Eine andere importierte Zeile ist bereits mit dieser Buchung verknüpft."
+      reconcile:
+        already: "Der Auszug dieses Imports ist bereits abgeglichen."
+        nothing: "Keine übertragene Zeile dieses Imports ist abzugleichen."

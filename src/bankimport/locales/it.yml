@@ -1,0 +1,120 @@
+it:
+  bankimport:
+    module:
+      name: "Importazione degli estratti conto"
+    permissions:
+      read: "Consultare gli estratti conto importati e l'area di attesa"
+      import: "Importare estratti conto, scegliere le contropartite, trasferire e riconciliare"
+      admin: "Configurare i formati CSV e le regole, eliminare un'importazione, eliminare definitivamente le righe scartate"
+    menu:
+      bankimport: "Estratti conto"
+      bankimport_import: "Importa un estratto conto"
+      bankimport_lines: "Righe da elaborare"
+      bankimport_history: "Cronologia delle importazioni"
+      bankimport_formats: "Formati di estratto CSV"
+      bankimport_rules: "Regole di categorizzazione"
+    kinds:
+      csv: "CSV"
+      ofx: "OFX"
+      qif: "QIF"
+    statuses:
+      pending: "Da elaborare"
+      transferred: "Trasferita"
+      duplicate: "Duplicato"
+      discarded: "Scartata"
+    directions:
+      any: "Entrata o uscita"
+      in: "Entrata"
+      out: "Uscita"
+    separators:
+      comma: "Virgola (,)"
+      semicolon: "Punto e virgola (;)"
+      tab: "Tabulazione"
+      pipe: "Barra verticale (|)"
+    encodings:
+      utf-8: "UTF-8"
+      windows-1252: "Windows-1252 (Latin-1)"
+    decimal_separators:
+      comma: "Virgola (1234,56)"
+      dot: "Punto (1234.56)"
+    thousands_separators:
+      none: "Nessuno"
+      space: "Spazio (1 234)"
+      dot: "Punto (1.234)"
+      comma: "Virgola (1,234)"
+      apostrophe: "Apostrofo (1'234)"
+    errors:
+      choice:
+        invalid: "Valore non ammesso: %{value}."
+      ledger:
+        blank: "Scelga un giornale finanziario."
+        invalid: "Questo giornale non è un giornale finanziario a Lei accessibile."
+      format:
+        blank: "Scelga il formato CSV dell'istituto."
+        unknown: "Questo formato CSV non esiste più."
+        name:
+          blank: "Assegni un nome al formato."
+          too_long: "Il nome non deve superare %{max} caratteri."
+          taken: "Esiste già un formato con questo nome."
+        institution:
+          too_long: "L'istituto non deve superare %{max} caratteri."
+        thousands_separator:
+          same: "Il separatore delle migliaia deve essere diverso dal separatore decimale."
+        skip_lines:
+          range: "Il numero di righe di intestazione va da 0 a 50."
+        column:
+          range: "Una posizione di colonna va da 1 a %{max}."
+          repeated: "Una stessa colonna è assegnata due volte."
+        amount_column:
+          blank: "Indichi la colonna dell'importo, oppure quelle del dare e dell'avere."
+          both: "Indichi la colonna dell'importo oppure quelle del dare e dell'avere, non entrambe."
+      rule:
+        condition:
+          blank: "Indichi almeno una condizione: un testo della descrizione o un importo."
+        label_contains:
+          too_long: "Il testo non deve superare %{max} caratteri."
+        amount:
+          positive: "L'importo di una regola è positivo (il segno si sceglie a parte)."
+        position:
+          range: "L'ordine va da 0 a 999."
+      counterpart:
+        blank: "Scelga una scheda o un conto."
+        both: "Scelga una scheda o un conto, non entrambi."
+        card_unknown: "Nessuna scheda ha il codice %{code}."
+        account_unknown: "Il conto %{number} non esiste."
+        account_not_direct: "Il conto %{number} non è utilizzabile in registrazione."
+      file:
+        blank: "Scelga un file o ne incolli il contenuto."
+        too_large: "Il file supera %{max} MiB."
+        binary: "Questo file non è un estratto conto in formato testo (CSV, OFX o QIF)."
+        too_many_lines: "Il file contiene più di %{max} righe: lo suddivida."
+        already_imported: "Questo file è già stato importato in questo giornale il %{date}. Selezioni «Importa comunque» per riprenderlo."
+        malformed_csv: "Il file CSV non è ben formato: %{detail}."
+        empty: "Nessuna operazione è stata letta in questo file."
+        not_ofx: "Questo file non è un estratto conto OFX."
+        not_qif: "Questo file non è un estratto conto QIF."
+        filename:
+          blank: "Il file deve avere un nome."
+      line:
+        date: "Riga %{line}: data illeggibile (%{value})."
+        amount: "Riga %{line}: importo illeggibile (%{value})."
+        zero: "Riga %{line}: importo nullo, riga ignorata."
+        label: "Riga %{line}: descrizione vuota."
+        not_pending: "Questa riga non è più da elaborare."
+        match_invalid: "Questa registrazione non è una registrazione aperta della scheda per l'importo della riga."
+        none_selected: "Selezioni almeno una riga."
+        fitid_taken: "L'operazione %{fitid} è già presente in questo giornale."
+      import:
+        in_use: "Alcune righe di questa importazione sono state trasferite o riconciliate: l'importazione viene conservata."
+      payee:
+        too_long: "Il beneficiario non deve superare %{max} caratteri."
+      relink:
+        entry_unknown: "La registrazione %{id} non esiste o non Le è accessibile."
+        entry_cancelled: "Questa registrazione è stornata, oppure è uno storno: scelga la registrazione che la sostituisce."
+        ledger: "Questa registrazione non è nel giornale della riga."
+        amount: "Questa registrazione riporta %{amount} sul conto bancario, la riga %{expected}."
+        date: "Questa registrazione è datata a più di %{days} giorni dalla riga."
+        entry_taken: "Un'altra riga importata è già collegata a questa registrazione."
+      reconcile:
+        already: "L'estratto conto di questa importazione è già riconciliato."
+        nothing: "Nessuna riga trasferita di questa importazione è da riconciliare."

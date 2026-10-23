@@ -4,7 +4,7 @@ require "../spec_helper"
 
 # Traductions des écrans de l'extension (ADR-005 D7) : chaque route de
 # `/ext/BANKIMPORT/` servie en `GET` (liste tirée du routeur de Marten),
-# obtenue en fr, en et nl par un administrateur, sur deux imports (l'un
+# obtenue dans chaque langue livrée par un administrateur, sur deux imports (l'un
 # pointé, aux lignes dans chaque état : à traiter, contrepartie proposée,
 # transférée puis extournée, écartée ; l'autre par un format CSV, à pointer), deux formats et deux
 # règles. Contrôle de l'interface (`PartiduoUi::Translations`) : ni
@@ -14,7 +14,7 @@ require "../spec_helper"
 private alias S = Bankimport::SpecSupport
 private alias Api = Bankimport::Api
 
-describe "Traductions des écrans BANKIMPORT (fr, en, nl)" do
+describe "Traductions des écrans BANKIMPORT (langues livrées)" do
   it "rend chaque écran dans chaque langue, sans clé absente, brute ni interpolation non résolue" do
     browser = PartiduoUi::Books.admin
     S.user("bruno@example.com", "Bruno")

@@ -31,13 +31,13 @@ describe "Conventions de l'extension BANKIMPORT" do
     offenders.should be_empty
   end
 
-  it "a les mêmes clés de traduction en fr, en et nl, aux mêmes interpolations" do
+  it "a les mêmes clés de traduction dans chaque langue livrée, aux mêmes interpolations" do
     %w[src/bankimport/locales ui/bulma/locales].flat_map do |dir|
       PartiduoUi::Translations.parity_failures(File.join(Bankimport::SpecSupport::ROOT, dir))
     end.should eq([] of String)
   end
 
-  it "traduit en fr, en et nl toute clé passée à I18n.t ou {% translate %} (cœur, interface, extension)" do
+  it "traduit dans chaque langue livrée toute clé passée à I18n.t ou {% translate %} (cœur, interface, extension)" do
     PartiduoUi::Translations.unknown_keys(Bankimport::SpecSupport::ROOT, %w[src/**/*.cr ui/**/*.cr ui/**/*.html]).should eq([] of String)
   end
 
@@ -55,7 +55,7 @@ describe "Conventions de l'extension BANKIMPORT" do
     missing.should be_empty
   end
 
-  it "traduit toute clé d'erreur du contrat (bankimport.errors.*) en fr, en et nl" do
+  it "traduit toute clé d'erreur du contrat (bankimport.errors.*) dans chaque langue livrée" do
     cited = source_files("src/**/*.cr").flat_map do |path|
       text = File.read(path)
       text.scan(/error\([^()]*?, "([a-z_]+(?:\.[a-z_]+)+)"/).map(&.[1]) + text.scan(/issue\(\w+, "([a-z_]+(?:\.[a-z_]+)+)"/).map(&.[1])
