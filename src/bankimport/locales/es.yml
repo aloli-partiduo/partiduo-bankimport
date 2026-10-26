@@ -48,7 +48,7 @@ es:
         invalid: "Valor no admitido: %{value}."
       ledger:
         blank: "Elija un diario financiero."
-        invalid: "Este diario no es un diario financiero que le esté abierto."
+        invalid: "Este diario no es un diario financiero al que tenga acceso."
       format:
         blank: "Elija el formato CSV de la entidad."
         unknown: "Este formato CSV ya no existe."
@@ -109,7 +109,7 @@ es:
       payee:
         too_long: "El beneficiario no debe superar %{max} caracteres."
       relink:
-        entry_unknown: "El asiento %{id} no existe o no le está abierto."
+        entry_unknown: "El asiento %{id} no existe o no tiene acceso a él."
         entry_cancelled: "Este asiento está extornado, o es un extorno: elija el asiento que lo sustituye."
         ledger: "Este asiento no está en el diario de la línea."
         amount: "Este asiento lleva %{amount} en la cuenta bancaria, la línea %{expected}."

@@ -142,7 +142,7 @@ it:
       start_balance: "Saldo iniziale"
       end_balance: "Saldo finale"
       reconcile_submit: "Riconcilia"
-      invalid_amount: "Indichi saldi validi (per esempio 1 234,56)."
+      invalid_amount: "Indichi saldi validi (per esempio 1.234,56)."
     formats:
       csv_name: "formati-estratti"
       none: "Nessun formato: crei quello del Suo istituto."
